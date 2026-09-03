@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>BASEBALL SCOUT BETA</title>
+<style>
+:root{
+  --bg:#07111d;--panel:#0e1b2b;--panel2:#13243a;--line:#253a54;
+  --text:#eef5ff;--muted:#8da1ba;--accent:#4d9cff;--good:#45c58a;
+  --bad:#ed6671;--gold:#f4c95d;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif}
+button,input{font:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:disabled{opacity:.45;cursor:not-allowed}
+#app{min-height:100vh}
+.top{min-height:70px;background:#091625;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;
+  position:sticky;top:0;z-index:10}
+.brand{font-weight:900;white-space:nowrap}.budget{padding:9px 14px;border-radius:999px;
+  background:#102842;white-space:nowrap}.budget b{color:#8bc0ff}
+.layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 70px)}
+nav{padding:15px;background:#081321;border-right:1px solid var(--line)}
+nav button{width:100%;padding:12px;margin:3px 0;border:0;border-radius:10px;background:transparent;
+  color:#aebdd0;text-align:left}
+nav button.active,nav button:hover{background:#142b47;color:#fff}
+main{width:100%;max-width:1250px;margin:auto;padding:25px}
+.pagehead{display:flex;align-items:end;justify-content:space-between;gap:15px;margin-bottom:18px}
+.pagehead h1{margin:0}.muted{color:var(--muted)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.hero{text-align:center}
+.stadium{height:350px;border-radius:22px;position:relative;overflow:hidden;
+  background:linear-gradient(#172b43 0 37%,#0d5a38 37%);border:1px solid #34536e;
+  box-shadow:inset 0 -50px 100px #0006}
+.stadium:after{content:"";position:absolute;width:78%;height:65%;left:11%;top:28%;
+  border:28px solid #59697b;border-radius:50%;box-shadow:0 0 0 7px #182638}
+.field{position:absolute;width:190px;height:190px;left:50%;top:48%;
+  transform:translate(-50%,-20%) rotate(45deg);background:#9b6a3c;border:8px solid #f6efd8;z-index:2}
+.mound{position:absolute;width:46px;height:46px;border-radius:50%;left:50%;top:43%;
+  transform:translate(-50%,-50%);background:#b77c48;z-index:3}
+.stadium h2{position:relative;z-index:4;padding-top:24px;margin:0;text-shadow:0 2px 12px #000}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px}
+.stat small{color:var(--muted)}.stat strong{display:block;font-size:23px;margin-top:4px}
+.action{background:var(--panel2);color:#fff;border:1px solid #2a4564;border-radius:14px;
+  padding:17px;text-align:left}.action:hover{background:#18324f}.action b{display:block;margin-bottom:5px}
+.btn{border:0;border-radius:9px;padding:9px 12px;background:#287de4;color:white;font-weight:700}
+.btn.good{background:#217d58}.btn.bad{background:#8e303b}.btn.gray{background:#293b50}
+.btn.gold{background:#8b6b1d}
+.tablewrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:680px}
+.table th,.table td{padding:11px;border-bottom:1px solid var(--line);text-align:left}
+.table th{font-size:12px;color:var(--muted)}
+.playercard{cursor:pointer}.playercard:hover{border-color:#4775a3}
+.tag{display:inline-block;padding:4px 8px;border-radius:999px;background:#1b3552;font-size:12px;margin-right:4px}
+.ovr{font-size:30px;font-weight:900}.bar{height:7px;background:#1d2e43;border-radius:99px;
+  overflow:hidden;margin-top:5px}.bar i{display:block;height:100%;background:var(--accent)}
+.notice{padding:12px 14px;background:#102a44;border-radius:10px;color:#b9d6f2;margin:12px 0}
+.modalback{position:fixed;inset:0;background:#0009;display:grid;place-items:center;padding:18px;z-index:20}
+.modal{width:min(650px,100%);max-height:90vh;overflow:auto;background:#0d1b2c;border:1px solid #304762;
+  border-radius:18px;padding:20px}.close{float:right;background:transparent;border:0;color:#9fb1c7;font-size:24px}
+.create{min-height:100vh;display:grid;place-items:center;padding:20px;
+  background:radial-gradient(circle at 50% 20%,#173c68,#07111d 60%)}
+.create .panel{width:min(460px,100%);padding:30px}.create h1{text-align:center}
+.create input{width:100%;padding:13px;border:1px solid #35506e;background:#091625;color:#fff;
+  border-radius:10px;margin:8px 0 15px;outline:0}.create button{width:100%;padding:13px}
+.history{display:flex;gap:8px;flex-wrap:wrap}
+.history span{padding:7px 10px;background:#16283d;border-radius:8px;font-size:13px}
+.errorbox{max-width:720px;margin:60px auto;padding:24px;border:1px solid #74343d;border-radius:16px;
+  background:#25151a}.errorbox h1{margin-top:0}.errorbox pre{white-space:pre-wrap;word-break:break-word;color:#ffc9ce}
+.empty{padding:30px;text-align:center;color:var(--muted)}
+@media(max-width:760px){
+  .layout{display:block}nav{display:flex;overflow-x:auto;position:sticky;top:70px;z-index:9;
+    border-right:0;border-bottom:1px solid var(--line);padding:8px}
+  nav button{min-width:max-content;width:auto;margin:0 3px}
+  .stats{grid-template-columns:repeat(2,1fr)}main{padding:16px}.stadium{height:270px}
+  .top{padding:10px}.brand{font-size:14px}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* BASEBALL SCOUT BETA
+   파일 단독 실행을 우선으로 설계:
+   1) 인라인 onclick 제거
+   2) localStorage 실패/손상 세이브도 게임 실행 가능
+   3) 저장 데이터 검증 및 복구
+   4) 모든 화면을 하나의 이벤트 위임으로 처리
+*/
+
+var KEY="baseballScoutBetaV2";
+var game=null;
+var currentPage="home";
+
+var first=[
+ "김민준","이도윤","박준혁","최현우","정시우","한지훈","윤태양","서준호","강민재","임건우",
+ "조현석","송우진","오지환","문성재","백승호","장현석","류재민","김태윤","홍준서","배현우",
+ "김도현","이준서","박시우","최건우","정민재","한승우","윤도현","강현우","서진우","문준혁"
+];
+var positions=["SS","CF","SP","RF","C","2B","1B","3B","RP","LF"];
+var changes=[70,55,45,35,25,15,5,-5,-10,-20];
+
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function uid(){return String(Date.now())+"_"+Math.random().toString(36).slice(2,10)}
+function esc(x){
+  return String(x==null?"":x).replace(/[&<>"']/g,function(m){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m];
+  });
+}
+function potRoll(){
+  var r=Math.random();
+  if(r<.035)return "S";
+  if(r<.15)return "A";
+  if(r<.36)return "B";
+  if(r<.64)return "C";
+  if(r<.88)return "D";
+  return "F";
+}
+function makePlayer(i,age){
+  var pos=positions[rand(0,positions.length-1)];
+  var o=rand(53,82);
+  var p=potRoll();
+  if(age==null)age=rand(18,29);
+  return {
+    id:uid(),name:first[i%first.length],age:age,pos:pos,ovr:o,pot:p,
+    salary:rand(1,10),power:rand(45,88),contact:rand(45,88),speed:rand(45,88),
+    def:rand(45,88),pitch:rand(45,88),control:rand(45,88),
+    scouted:false,injury:rand(1,10)
+  };
+}
+function makeRoster(n){
+  var a=[],i;
+  for(i=0;i<n;i++)a.push(makePlayer(i));
+  return a;
+}
+function makeDraftPool(){
+  var a=[],i;
+  for(i=0;i<10;i++)a.push(makePlayer(i,18));
+  return a;
+}
+function makeFAs(){
+  var a=[
+    {name:"김성우",pos:"CF",age:30,ovr:84,pot:"A",salary:24},
+    {name:"박준영",pos:"SP",age:29,ovr:81,pot:"B",salary:18},
+    {name:"최재훈",pos:"C",age:32,ovr:79,pot:"B",salary:15},
+    {name:"이현석",pos:"SS",age:28,ovr:77,pot:"A",salary:14}
+  ];
+  var i;
+  for(i=0;i<a.length;i++){
+    var p=makePlayer(16+i,a[i].age);
+    a[i].id=p.id;a[i].power=p.power;a[i].contact=p.contact;a[i].speed=p.speed;
+    a[i].def=p.def;a[i].pitch=p.pitch;a[i].control=p.control;a[i].scouted=true;a[i].injury=p.injury;
+  }
+  return a;
+}
+function defaultGame(club){
+  return {
+    version:2,club:club,season:2026,budget:200,rank:null,
+    roster:makeRoster(15),prospects:makeDraftPool(),draftPool:makeDraftPool(),
+    faPool:makeFAs(),message:"창단을 완료했습니다. 이제 스카우팅과 선수단 관리를 시작하세요.",
+    history:[],phase:"정규시즌"
+  };
+}
+function validPlayer(p){
+  return p && typeof p==="object" && p.id && p.name && typeof p.ovr==="number";
+}
+function normalizeGame(g){
+  if(!g || typeof g!=="object" || typeof g.club!=="string" || !g.club.trim())return null;
+  if(!Array.isArray(g.roster))g.roster=[];
+  if(!Array.isArray(g.prospects))g.prospects=[];
+  if(!Array.isArray(g.draftPool))g.draftPool=[];
+  if(!Array.isArray(g.faPool))g.faPool=[];
+  if(!Array.isArray(g.history))g.history=[];
+  g.budget=Number.isFinite(Number(g.budget))?Number(g.budget):200;
+  g.season=Number.isFinite(Number(g.season))?Number(g.season):2026;
+  if(typeof g.phase!=="string")g.phase="정규시즌";
+  if(typeof g.message!=="string")g.message="";
+  g.roster=g.roster.filter(validPlayer);
+  g.prospects=g.prospects.filter(validPlayer);
+  g.draftPool=g.draftPool.filter(validPlayer);
+  g.faPool=g.faPool.filter(validPlayer);
+  return g;
+}
+function safeSave(){
+  try{
+    if(!game)return false;
+    localStorage.setItem(KEY,JSON.stringify(game));
+    return true;
+  }catch(e){
+    /* 파일 뷰어/Safari 정책으로 저장이 막혀도 게임 자체는 계속 실행 */
+    return false;
+  }
+}
+function safeLoad(){
+  try{
+    var raw=localStorage.getItem(KEY);
+    if(!raw)return null;
+    var parsed=JSON.parse(raw);
+    return normalizeGame(parsed);
+  }catch(e){
+    return null;
+  }
+}
+function clearSave(){
+  try{localStorage.removeItem(KEY)}catch(e){}
+}
+function averageOvr(){
+  if(!game.roster.length)return 0;
+  var sum=0,i;
+  for(i=0;i<game.roster.length;i++)sum+=Number(game.roster[i].ovr)||0;
+  return Math.round(sum/game.roster.length);
+}
+function potValue(p){return {S:6,A:5,B:4,C:3,D:2,F:1}[p]||1}
+function potentialGrowth(p){
+  var g=potValue(p.pot);
+  if(g===6)return rand(2,5);
+  if(g===5)return rand(1,4);
+  if(g===4)return rand(1,3);
+  if(g===3)return rand(0,2);
+  if(g===2)return rand(-1,2);
+  return rand(-2,1);
+}
+function findPlayer(id){
+  var i,p;
+  for(i=0;i<game.roster.length;i++){p=game.roster[i];if(String(p.id)===String(id))return p}
+  for(i=0;i<game.prospects.length;i++){p=game.prospects[i];if(String(p.id)===String(id))return p}
+  for(i=0;i<game.draftPool.length;i++){p=game.draftPool[i];if(String(p.id)===String(id))return p}
+  for(i=0;i<game.faPool.length;i++){p=game.faPool[i];if(String(p.id)===String(id))return p}
+  return null;
+}
+function ensurePools(){
+  if(!game.prospects.length)game.prospects=makeDraftPool();
+  if(!game.draftPool.length)game.draftPool=makeDraftPool();
+  if(!game.faPool.length)game.faPool=makeFAs();
+}
+function render(){
+  if(!game){renderCreate();return}
+  renderGame();
+}
+function renderCreate(){
+  var hasSave=!!safeLoad();
+  document.getElementById("app").innerHTML=
+    '<section class="create"><div class="panel">'+
+    '<div style="text-align:center;font-size:52px">⚾</div>'+
+    '<h1>BASEBALL SCOUT</h1>'+
+    '<p class="muted" style="text-align:center">야구 스카우터 시뮬레이터 · BETA</p>'+
+    '<label for="clubInput">구단명</label>'+
+    '<input id="clubInput" maxlength="20" autocomplete="off" placeholder="예: 서울 블루스">'+
+    '<button class="btn" data-action="new-game">구단 창설 · 200억으로 시작</button>'+
+    (hasSave?
+      '<button class="btn gray" style="margin-top:10px" data-action="continue-game">기존 구단 이어하기</button>'+
+      '<button class="btn bad" style="margin-top:10px" data-action="delete-save">저장 삭제</button>'
+      :'')+
+    '</div></section>';
+}
+function renderGame(){
+  document.getElementById("app").innerHTML=
+    '<header class="top">'+
+      '<div class="brand">⚾ BASEBALL SCOUT <span class="muted">BETA</span></div>'+
+      '<div class="budget">💰 올해 예산 <b>'+game.budget+'억</b></div>'+
+    '</header>'+
+    '<div class="layout"><nav>'+
+      '<button id="n-home" data-page="home">🏟️ 구단 로비</button>'+
+      '<button id="n-roster" data-page="roster">👥 선수단</button>'+
+      '<button id="n-scout" data-page="scout">🔎 스카우팅</button>'+
+      '<button id="n-draft" data-page="draft">📋 신인 드래프트</button>'+
+      '<button id="n-trade" data-page="trade">🔄 트레이드</button>'+
+      '<button id="n-fa" data-page="fa">💰 FA</button>'+
+      '<button id="n-season" data-page="season">🗓️ 시즌</button>'+
+      '<button id="n-info" data-page="info">📊 구단 정보</button>'+
+    '</nav><main id="main"></main></div>';
+  page("home");
+}
+function page(p){
+  currentPage=p;
+  var buttons=document.querySelectorAll("nav button"),i;
+  for(i=0;i<buttons.length;i++)buttons[i].classList.remove("active");
+  var n=document.getElementById("n-"+p);if(n)n.classList.add("active");
+  var c=document.getElementById("main");if(!c)return;
+  var map={
+    home:home,roster:rosterPage,scout:scoutPage,draft:draftPage,
+    trade:tradePage,fa:faPage,season:seasonPage,info:infoPage
+  };
+  (map[p]||home)(c);
+}
+function home(c){
+  c.innerHTML=
+    '<div class="hero">'+
+    '<div class="pagehead"><div><h1>'+esc(game.club)+'</h1><div class="muted">'+game.season+' 시즌 · '+esc(game.phase)+'</div></div>'+
+    '<button class="btn gray" data-page="season">시즌 진행 →</button></div>'+
+    '<div class="stadium"><h2>'+esc(game.club)+' STADIUM</h2><div class="field"></div><div class="mound"></div></div>'+
+    '<div class="stats">'+
+      '<div class="stat"><small>올해 예산</small><strong>'+game.budget+'억</strong></div>'+
+      '<div class="stat"><small>선수단</small><strong>'+game.roster.length+'명</strong></div>'+
+      '<div class="stat"><small>지난 시즌</small><strong>'+(game.rank?game.rank+"위":"신규")+'</strong></div>'+
+      '<div class="stat"><small>평균 OVR</small><strong>'+averageOvr()+'</strong></div>'+
+    '</div>'+
+    '<div class="notice">'+esc(game.message)+'</div>'+
+    '<div class="grid" style="margin-top:14px">'+
+      '<button class="action" data-page="scout">🔎 <b>유망주 스카우팅</b><span class="muted">숨겨진 능력과 잠재력을 조사합니다.</span></button>'+
+      '<button class="action" data-page="draft">📋 <b>신인 드래프트</b><span class="muted">18세 유망주를 지명합니다.</span></button>'+
+      '<button class="action" data-page="trade">🔄 <b>트레이드</b><span class="muted">선수의 가치에 맞춰 거래합니다.</span></button>'+
+      '<button class="action" data-page="fa">💰 <b>FA 시장</b><span class="muted">검증된 선수를 영입합니다.</span></button>'+
+    '</div></div>';
+}
+function rosterPage(c){
+  if(!game.roster.length){c.innerHTML='<div class="empty">선수단이 비어 있습니다.</div>';return}
+  var rows="",i,p;
+  for(i=0;i<game.roster.length;i++){
+    p=game.roster[i];
+    rows+='<tr>'+
+      '<td><button class="btn gray" data-action="details" data-id="'+esc(p.id)+'">'+esc(p.name)+'</button></td>'+
+      '<td>'+esc(p.pos)+'</td><td>'+p.age+'</td><td><b>'+p.ovr+'</b></td>'+
+      '<td><span class="tag">'+esc(p.pot)+'</span></td><td>'+p.salary+'억</td>'+
+      '<td><button class="btn bad" data-action="release" data-id="'+esc(p.id)+'">방출</button></td>'+
+    '</tr>';
+  }
+  c.innerHTML='<div class="pagehead"><div><h1>👥 선수단</h1><div class="muted">선수를 눌러 상세 능력치를 확인하세요.</div></div></div>'+
+    '<div class="panel tablewrap"><table class="table"><thead><tr><th>선수</th><th>포지션</th><th>나이</th><th>OVR</th><th>잠재력</th><th>연봉</th><th>관리</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+function details(id){
+  var p=findPlayer(id);if(!p)return;
+  var stats=(p.pos==="SP"||p.pos==="RP")?
+    [["구속",p.pitch],["제구",p.control],["변화구",p.def],["구위",p.power]]:
+    [["타격",p.contact],["파워",p.power],["주루",p.speed],["수비",p.def]];
+  var body="",i,s;
+  for(i=0;i<stats.length;i++){
+    s=stats[i];
+    body+='<p>'+esc(s[0])+' <b style="float:right">'+s[1]+'</b><div class="bar"><i style="width:'+Math.max(0,Math.min(100,s[1]))+'%"></i></div></p>';
+  }
+  closeModal();
+  document.body.insertAdjacentHTML("beforeend",
+    '<div class="modalback" id="modal" data-action="modal-bg">'+
+      '<div class="modal">'+
+        '<button class="close" data-action="close-modal">×</button>'+
+        '<h2>'+esc(p.name)+'</h2><p>'+esc(p.pos)+' · '+p.age+'세</p>'+
+        '<div class="ovr">'+p.ovr+' OVR</div>'+
+        '<p>성장 가능성: <span class="tag">'+(p.scouted?esc(p.pot):"??")+'</span></p>'+
+        body+
+        '<p class="muted">부상 위험도 '+p.injury+'/10 · 연봉 '+p.salary+'억</p>'+
+      '</div>'+
+    '</div>');
+}
+function closeModal(){
+  var m=document.getElementById("modal");if(m)m.remove();
+}
+function release(id){
+  var p=findPlayer(id);if(!p)return;
+  if(!window.confirm(p.name+"을(를) 방출할까요?"))return;
+  var refund=Math.max(1,Math.floor((Number(p.salary)||1)*.3));
+  game.roster=game.roster.filter(function(x){return String(x.id)!==String(id)});
+  game.budget+=refund;
+  game.message=p.name+" 방출 완료. "+refund+"억이 반환되었습니다.";
+  safeSave();page("roster");renderHeaderBudget();
+}
+function renderHeaderBudget(){
+  var b=document.querySelector(".budget b");if(b)b.textContent=game.budget+"억";
+}
+function scoutPage(c){
+  ensurePools();
+  var cards="",i,p;
+  for(i=0;i<game.prospects.length;i++){
+    p=game.prospects[i];
+    cards+='<div class="panel playercard" data-action="details" data-id="'+esc(p.id)+'">'+
+      '<h2>'+esc(p.name)+'</h2><span class="tag">'+esc(p.pos)+'</span><span class="tag">'+p.age+'세</span>'+
+      '<p>OVR: <b>'+(p.scouted?p.ovr:"??")+'</b></p>'+
+      '<p>성장 가능성: <b>'+(p.scouted?esc(p.pot):"??~S")+'</b></p>'+
+      '<button class="btn" data-action="scout" data-id="'+esc(p.id)+'">'+(p.scouted?"재스카우팅":"정밀 스카우팅 · 1억")+'</button>'+
+    '</div>';
+  }
+  c.innerHTML='<div class="pagehead"><div><h1>🔎 스카우팅</h1><div class="muted">정밀 스카우팅 1회당 1억. 조사 전에는 일부 정보가 숨겨져 있습니다.</div></div></div>'+
+    '<div class="grid">'+cards+'</div>';
+}
+function scout(id){
+  var p=game.prospects.find(function(x){return String(x.id)===String(id)});if(!p)return;
+  if(game.budget<1){window.alert("스카우팅 예산이 부족합니다.");return}
+  game.budget-=1;p.scouted=true;
+  game.message=p.name+"의 스카우팅 보고서가 갱신되었습니다.";
+  safeSave();page("scout");renderHeaderBudget();
+}
+function draftPage(c){
+  ensurePools();
+  var cards="",i,p;
+  for(i=0;i<game.draftPool.length;i++){
+    p=game.draftPool[i];
+    cards+='<div class="panel"><h2>'+esc(p.name)+'</h2><p>'+esc(p.pos)+' · '+p.age+'세</p>'+
+      '<p>OVR <b>'+p.ovr+'</b> · 잠재력 <span class="tag">'+esc(p.pot)+'</span></p>'+
+      '<button class="btn good" data-action="pick" data-id="'+esc(p.id)+'">지명하기 · 5억</button></div>';
+  }
+  c.innerHTML='<div class="pagehead"><div><h1>📋 신인 드래프트</h1><div class="muted">지명 비용 5억 · 지명한 선수는 즉시 선수단에 합류합니다.</div></div></div>'+
+    '<div class="grid">'+cards+'</div>';
+}
+function pick(id){
+  if(game.budget<5){window.alert("예산이 부족합니다.");return}
+  var idx=-1,i;
+  for(i=0;i<game.draftPool.length;i++)if(String(game.draftPool[i].id)===String(id)){idx=i;break}
+  if(idx<0)return;
+  var p=game.draftPool[idx];
+  game.budget-=5;
+  p.salary=1;p.scouted=true;
+  game.roster.push(p);
+  game.draftPool.splice(idx,1);
+  game.message=p.name+"을(를) 신인으로 지명했습니다.";
+  safeSave();page("roster");renderHeaderBudget();
+}
+function tradePage(c){
+  var offers=[
+    {name:"이강민",pos:"CF",age:24,ovr:75,pot:"B"},
+    {name:"정우석",pos:"SP",age:23,ovr:71,pot:"A"},
+    {name:"박지훈",pos:"SS",age:22,ovr:68,pot:"A"}
+  ];
+  var cards="",i,o;
+  for(i=0;i<offers.length;i++){
+    o=offers[i];
+    cards+='<div class="panel"><h2>'+esc(o.name)+'</h2><p>'+esc(o.pos)+' · '+o.age+'세 · OVR '+o.ovr+' · '+esc(o.pot)+'</p>'+
+      '<button class="btn" data-action="trade" data-index="'+i+'">영입 협상</button></div>';
+  }
+  game._tradeOffers=offers;
+  c.innerHTML='<div class="pagehead"><div><h1>🔄 트레이드</h1><div class="muted">상대가 원하는 선수의 가치가 높을수록 제안 성공률이 올라갑니다.</div></div></div>'+
+    '<div class="grid">'+cards+'</div>';
+}
+function trade(i){
+  var offers=game._tradeOffers||[],o=offers[Number(i)];
+  if(!o)return;
+  var candidates=game.roster.filter(function(p){return Math.abs(p.ovr-o.ovr)<=8});
+  if(!candidates.length){window.alert("상대가 받아들일 만한 선수가 없습니다.");return}
+  var p=candidates[rand(0,candidates.length-1)];
+  if(!window.confirm(p.name+"(OVR "+p.ovr+")을 보내고 "+o.name+"(OVR "+o.ovr+")을 영입할까요?"))return;
+  game.roster=game.roster.filter(function(x){return String(x.id)!==String(p.id)});
+  game.roster.push({
+    id:uid(),name:o.name,age:o.age,pos:o.pos,ovr:o.ovr,pot:o.pot,salary:7,
+    power:70,contact:72,speed:70,def:70,pitch:70,control:70,scouted:true,injury:5
+  });
+  game.message="트레이드 성공: "+p.name+" ↔ "+o.name;
+  safeSave();page("roster");
+}
+function faPage(c){
+  ensurePools();
+  var cards="",i,p;
+  for(i=0;i<game.faPool.length;i++){
+    p=game.faPool[i];
+    cards+='<div class="panel"><h2>'+esc(p.name)+'</h2><p>'+esc(p.pos)+' · '+p.age+'세</p>'+
+      '<p>OVR <b>'+p.ovr+'</b> · 잠재력 <span class="tag">'+esc(p.pot)+'</span></p>'+
+      '<p>4년 총액 <b>'+p.salary+'억</b></p>'+
+      '<button class="btn good" data-action="sign" data-id="'+esc(p.id)+'">계약</button></div>';
+  }
+  c.innerHTML='<div class="pagehead"><div><h1>💰 FA 시장</h1><div class="muted">계약 총액을 즉시 예산에서 차감합니다.</div></div></div>'+
+    '<div class="grid">'+cards+'</div>';
+}
+function sign(id){
+  var idx=-1,i;
+  for(i=0;i<game.faPool.length;i++)if(String(game.faPool[i].id)===String(id)){idx=i;break}
+  if(idx<0)return;
+  var p=game.faPool[idx];
+  if(game.budget<p.salary){window.alert("예산이 부족합니다.");return}
+  game.budget-=p.salary;p.scouted=true;game.roster.push(p);game.faPool.splice(idx,1);
+  game.message="FA "+p.name+"과(와) "+p.salary+"억 계약을 체결했습니다.";
+  safeSave();page("roster");renderHeaderBudget();
+}
+function seasonPage(c){
+  var h="",i,x;
+  for(i=0;i<changes.length;i++){
+    h+='<span>'+(i+1)+'위 '+(changes[i]>0?"+":"")+changes[i]+'억</span>';
+  }
+  var hist="";
+  if(game.history.length){
+    for(i=0;i<game.history.length;i++){
+      x=game.history[i];
+      hist+='<p>'+x.season+' 시즌 · '+x.rank+'위 · 다음 시즌 예산 '+x.budget+'억</p>';
+    }
+  }else hist="<p class='muted'>아직 종료된 시즌이 없습니다.</p>";
+  c.innerHTML='<div class="pagehead"><div><h1>🗓️ 시즌 관리</h1><div class="muted">'+game.season+' 시즌 · 현재 단계: '+esc(game.phase)+'</div></div>'+
+    '<button class="btn gold" data-action="finish-season">시즌 종료 · 다음 시즌</button></div>'+
+    '<div class="panel"><h2>이번 시즌</h2><p>현재 예산 <b>'+game.budget+'억</b></p>'+
+    '<p>베타 버전에서는 시즌 종료 시 구단 전력과 별개로 순위가 결정됩니다. 다음 베타에서 10개 구단 실제 경기 시뮬레이션을 연결합니다.</p></div>'+
+    '<div class="panel" style="margin-top:14px"><h2>다음 시즌 예산 규칙</h2><div class="history">'+h+'</div></div>'+
+    '<div class="panel" style="margin-top:14px"><h2>시즌 기록</h2>'+hist+'</div>';
+}
+function finishSeason(){
+  var rank=rand(1,10),change=changes[rank-1],old=game.budget,next=Math.max(50,old+change);
+  game.history.unshift({season:game.season,rank:rank,budget:next});
+  game.rank=rank;game.budget=next;game.season+=1;game.phase="정규시즌";
+  game.roster=game.roster.map(function(p){
+    var growth=potentialGrowth(p);
+    return Object.assign({},p,{age:p.age+1,ovr:Math.max(45,Math.min(95,p.ovr+growth))});
+  });
+  game.draftPool=makeDraftPool();game.prospects=makeDraftPool();game.faPool=makeFAs();
+  delete game._tradeOffers;
+  game.message="지난 시즌 "+rank+"위! 다음 시즌 예산은 "+old+"억 "+(change>=0?"+":"")+change+"억 = "+next+"억입니다.";
+  safeSave();page("home");
+}
+function infoPage(c){
+  c.innerHTML='<div class="pagehead"><div><h1>📊 구단 정보</h1><div class="muted">현재 세이브와 게임 규칙</div></div>'+
+    '<button class="btn bad" data-action="delete-save">구단 삭제</button></div>'+
+    '<div class="grid"><div class="panel"><h2>'+esc(game.club)+'</h2><p>현재 시즌: '+game.season+'</p>'+
+    '<p>예산: <b>'+game.budget+'억</b></p><p>선수단: '+game.roster.length+'명</p></div>'+
+    '<div class="panel"><h2>예산 규칙</h2><p>첫 시즌 <b>200억</b></p>'+
+    '<p>1위 +70억 · 2위 +55억 · 3위 +45억 · 4위 +35억 · 5위 +25억</p>'+
+    '<p>6위 +15억 · 7위 +5억 · 8위 -5억 · 9위 -10억 · 10위 -20억</p></div></div>';
+}
+function startNewGame(){
+  var input=document.getElementById("clubInput");
+  var club=input?input.value.trim():"";
+  if(!club){window.alert("구단명을 입력해주세요.");if(input)input.focus();return}
+  game=defaultGame(club);
+  safeSave();
+  render();
+}
+function continueGame(){
+  var loaded=safeLoad();
+  if(!loaded){window.alert("저장 데이터를 읽을 수 없습니다. 새 구단을 만들어 주세요.");return}
+  game=loaded;render();
+}
+function deleteSave(){
+  if(!window.confirm("저장 데이터를 삭제하고 처음부터 시작할까요?"))return;
+  clearSave();game=null;currentPage="home";renderCreate();
+}
+function showFatalError(e){
+  var msg=e&&e.stack?e.stack:String(e);
+  document.getElementById("app").innerHTML=
+    '<div class="errorbox"><h1>게임 초기화 중 오류가 발생했습니다.</h1>'+
+    '<p>이 화면이 보이면 아래 오류 내용을 개발용으로 확인할 수 있습니다.</p>'+
+    '<pre>'+esc(msg)+'</pre>'+
+    '<button class="btn" data-action="reset-memory">저장 없이 새 게임 시작</button></div>';
+}
+function boot(){
+  try{
+    game=safeLoad();
+    if(game)renderGame();else renderCreate();
+  }catch(e){showFatalError(e)}
+}
+
+/* 모든 클릭을 한 곳에서 처리한다. iPhone/iPad의 file:// 환경에서도
+   동작 방식을 단순하게 유지하기 위한 핵심 수정 */
+document.addEventListener("click",function(ev){
+  var target=ev.target;
+  var pageTarget=target.closest?target.closest("[data-page]"):null;
+  var actionTarget=target.closest?target.closest("[data-action]"):null;
+
+  if(pageTarget && !actionTarget){
+    page(pageTarget.getAttribute("data-page"));return;
+  }
+  if(actionTarget){
+    var action=actionTarget.getAttribute("data-action");
+    var id=actionTarget.getAttribute("data-id");
+    var idx=actionTarget.getAttribute("data-index");
+
+    if(action==="new-game"){startNewGame();return}
+    if(action==="continue-game"){continueGame();return}
+    if(action==="delete-save"){deleteSave();return}
+    if(action==="details"){details(id);return}
+    if(action==="close-modal"){closeModal();return}
+    if(action==="release"){release(id);return}
+    if(action==="scout"){
+      ev.stopPropagation();scout(id);return;
+    }
+    if(action==="pick"){pick(id);return}
+    if(action==="trade"){trade(idx);return}
+    if(action==="sign"){sign(id);return}
+    if(action==="finish-season"){finishSeason();return}
+    if(action==="reset-memory"){game=null;clearSave();renderCreate();return}
+    if(action==="modal-bg" && target===actionTarget){closeModal();return}
+  }
+});
+
+window.addEventListener("error",function(ev){
+  /* 치명적 초기화 오류만 화면에 표시. 게임 중 단일 오류는 브라우저 콘솔에 남긴다. */
+  if(!document.getElementById("main") && document.getElementById("app")){
+    showFatalError(ev.error||ev.message);
+  }
+});
+
+boot();
+})();
+</script>
+</body>
+</html>
