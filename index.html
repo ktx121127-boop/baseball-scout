@@ -13,7 +13,7 @@ button,input{font:inherit}.app{display:flex;min-height:100vh}.side{position:fixe
 </head>
 <body>
 <div class="app">
-<aside class="side"><div class="logo">⚾ <b>BASEBALL</b> SCOUTER</div><div id="nav"></div></aside>
+<aside class="side"><div class="logo">⚾ <b>BASEBALL</b> SCOUTER</div><div id="nav"></div><button class="nav" onclick="resetGame()">🔄 새 구단 시작</button></aside>
 <main class="main">
 <header><div><b id="club"></b><span id="phase" class="muted"></span></div><div class="topstats">📅 <b id="year"></b> 💰 <b id="money" class="budget"></b> ❤️ <b id="fan"></b></div></header>
 <section id="content" class="content"></section>
@@ -70,6 +70,7 @@ function load(){
     if(!raw)return false;
     game=JSON.parse(raw);
     normalize();
+    if(!game.club||!Array.isArray(game.roster))throw new Error("저장 데이터 형식이 올바르지 않습니다.");
     return true;
   }catch(e){game=null;return false}
 }
@@ -78,7 +79,7 @@ function normalize(){
   game.budget=Number.isFinite(+game.budget)?+game.budget:80;
   game.year=Number(game.year)||2026; game.morale=clamp(Number(game.morale)||70,0,100);
   game.games=clamp(Number(game.games)||0,0,144); game.total=144;
-  for(const k of ["roster","prospects","draft","fa","news","tx","awards","history"])if(!Array.isArray(game[k]))game[k]=[];
+  for(const k of ["roster","prospects","draft","fa","news","tx","awards","history","draws"])if(!Array.isArray(game[k]))game[k]=[];
   game.league=Array.isArray(game.league)&&game.league.length?game.league:makeLeague();
   game.train=Number(game.train)||8; game.last=game.last||null;
   game.stadiumLevel=clamp(Number(game.stadiumLevel)||0,0,5);
@@ -107,7 +108,7 @@ function createPlayer(o={}){
   const grade=o.grade||rollGrade(), info=GRADE_INFO[grade], foreign=!!o.foreign;
   return normalizePlayer({
     id:uid(),name:o.name||pick(foreign?FOREIGN:NAMES),age:o.age??rand(18,34),pos:o.pos||pick(POS),
-    grade,ovr:cl((o.ovr??rand(50,72))+info.bonus,45,95),salary:o.salary??rand(1,6),
+    grade,ovr:clamp((o.ovr??rand(50,72))+info.bonus,45,95),salary:o.salary??rand(1,6),
     years:o.years??3,left:o.left??3,foreign,xp:0,need:100,games:0,ab:0,h:0,hr:0,rbi:0,w:0,l:0,
     era:rand(280,520)/100,fatigue:rand(0,15),def:rand(45,82)
   });
@@ -118,13 +119,14 @@ function rollGrade(){
   return "Mystic";
 }
 function newGame(club,year){
+  if(autoTimer){clearTimeout(autoTimer);autoTimer=null}
   game={
     club,year:Number(year)||2026,budget:80,morale:70,games:0,total:144,phase:"시즌 시작 전",
     league:makeLeague(),roster:Array.from({length:12},()=>createPlayer()),
     prospects:Array.from({length:15},()=>createPlayer({age:rand(18,22),ovr:rand(47,67),salary:1})),
     draft:Array.from({length:30},()=>createPlayer({age:rand(18,22),ovr:rand(47,67),salary:1})),
     fa:Array.from({length:12},()=>createPlayer({ovr:rand(56,75)})),
-    news:[],tx:[],awards:[],history:[],train:8,last:null,stadiumLevel:0,stadiumUpgradeCost:100,championPremium:0,pendingDecision:null
+    news:[],tx:[],awards:[],history:[],draws:[],train:8,last:null,stadiumLevel:0,stadiumUpgradeCost:100,championPremium:0,pendingDecision:null
   };
   game.roster.slice(0,3).forEach(p=>p.grade="Legend");
   addNews("🏟️ 구단 창단",`${club}의 ${game.year}년 시즌을 시작합니다. 시작 예산은 80억입니다.`,"good");
@@ -186,9 +188,13 @@ function startScreen(){
   <p class="muted">단, 뽑기·영입 등으로 직접 돈을 쓰는 경우에는 50억 아래로 내려갈 수 있습니다.</p></div></div></div>`;
 }
 function createClub(){
-  const club=$("clubIn").value.trim(),year=$("yearIn").value;
+  const clubEl=$("clubIn"), yearEl=$("yearIn");
+  if(!clubEl||!yearEl)return alert("구단 생성 화면을 불러오지 못했습니다. 페이지를 새로고침해주세요.");
+  const club=clubEl.value.trim(), year=Number(yearEl.value);
   if(!club)return alert("구단명을 입력해주세요.");
-  newGame(club,year);page="home";render();
+  if(!Number.isInteger(year)||year<1900||year>2100)return alert("연도는 1900~2100 사이의 숫자로 입력해주세요.");
+  try{newGame(club,year);page="home";render();}
+  catch(err){console.error(err);alert("구단 생성 중 오류가 발생했습니다. 페이지를 새로고침한 뒤 다시 시도해주세요.");}
 }
 
 function homePage(c){
@@ -284,8 +290,13 @@ function drawPlayers(n){
   $("modal").classList.remove("hidden");
 }
 function scoutPage(c){
-  const pool=Array.from({length:10},()=>createPlayer({ovr:rand(52,78)}));
-  c.innerHTML=`<h1>🔎 국내 스카우팅</h1><div class="grid">${pool.map(p=>`<div class="panel">${playerCard(p,false)}<p>영입 비용 ${p.salary}억</p><button class="btn" onclick='signPlayer(${JSON.stringify(p)})'>영입</button></div>`).join("")}</div>`;
+  game.scoutPool=Array.from({length:10},()=>createPlayer({ovr:rand(52,78)}));
+  c.innerHTML=`<h1>🔎 국내 스카우팅</h1><div class="grid">${game.scoutPool.map(p=>`<div class="panel">${playerCard(p,false)}<p>영입 비용 ${p.salary}억</p><button class="btn" onclick="signScouted('${p.id}')">영입</button></div>`).join("")}</div>`;
+}
+function signScouted(id){
+  const p=(game.scoutPool||[]).find(x=>x.id===id);
+  if(!p)return alert("스카우팅 선수를 찾을 수 없습니다. 다시 스카우팅해주세요.");
+  signPlayer(p);
 }
 function signPlayer(p){
   p=normalizePlayer(p);const n=confirm(`기본 이름은 "${p.name}"입니다.\n이름을 바꾸시겠습니까?`)?prompt("새 이름",p.name):p.name;
@@ -293,8 +304,14 @@ function signPlayer(p){
   p.name=n.trim();game.budget-=p.salary;game.roster.push(p);addTx("국내 영입",p,"스카우팅");addNews("🔎 국내 영입",`${p.name}을(를) 영입했습니다.`,"good");save();go("scout");
 }
 function overseasPage(c){
-  const count=game.roster.filter(p=>p.foreign).length,pool=Array.from({length:8},()=>createPlayer({foreign:true,ovr:rand(60,80)}));
-  c.innerHTML=`<h1>🌎 해외 스카우팅</h1><div class="notice">외국인 선수 ${count}/3명 · 최대 3명</div><div class="grid">${pool.map(p=>`<div class="panel">${playerCard(p,false)}<p>영입 비용 ${p.salary}억</p><button class="btn" ${count>=3?"disabled":""} onclick='signForeign(${JSON.stringify(p)})'>영입</button></div>`).join("")}</div>`;
+  const count=game.roster.filter(p=>p.foreign).length;
+  game.overseasPool=Array.from({length:8},()=>createPlayer({foreign:true,ovr:rand(60,80)}));
+  c.innerHTML=`<h1>🌎 해외 스카우팅</h1><div class="notice">외국인 선수 ${count}/3명 · 최대 3명</div><div class="grid">${game.overseasPool.map(p=>`<div class="panel">${playerCard(p,false)}<p>영입 비용 ${p.salary}억</p><button class="btn" ${count>=3?"disabled":""} onclick="signForeignScouted('${p.id}')">영입</button></div>`).join("")}</div>`;
+}
+function signForeignScouted(id){
+  const p=(game.overseasPool||[]).find(x=>x.id===id);
+  if(!p)return alert("해외 스카우팅 선수를 찾을 수 없습니다. 다시 스카우팅해주세요.");
+  signForeign(p);
 }
 function signForeign(p){
   if(game.roster.filter(x=>x.foreign).length>=3)return alert("외국인 선수는 최대 3명입니다.");
