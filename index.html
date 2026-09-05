@@ -24,19 +24,47 @@ button,input{font:inherit}.app{display:flex;min-height:100vh}.side{position:fixe
 @keyframes reveal{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.06);opacity:1}100%{transform:scale(1);opacity:1}}
 .training-card{min-height:330px}
 .training-buttons .btn{flex:1;min-width:110px}
+.statline{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #26354c}.statline:last-child{border-bottom:0}
+
+/* V9 player-card / roster UI */
+.card-shell{position:relative;overflow:hidden;border-radius:14px;border:1px solid #34445b;background:linear-gradient(145deg,#0e1724,#111d2d 55%,#0a111c);box-shadow:0 8px 24px rgba(0,0,0,.22)}
+.card-shell.Common{border-color:#68717d}.card-shell.Rare{border-color:#2797e8}.card-shell.Epic{border-color:#a85cf2}.card-shell.Legend{border-color:#e6b72c}.card-shell.Mystic{border-color:#ffdc66;box-shadow:0 0 22px rgba(255,208,70,.18)}
+.card-top{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;font-weight:800}
+.card-portrait{height:155px;display:flex;align-items:center;justify-content:center;font-size:78px;background:radial-gradient(circle at 50% 40%,rgba(74,116,160,.42),rgba(6,12,20,.05) 65%),linear-gradient(160deg,#14263b,#08101b);border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06)}
+.card-shell.Epic .card-portrait{background:radial-gradient(circle at 50% 40%,rgba(153,75,229,.34),transparent 65%),linear-gradient(160deg,#211638,#08101b)}
+.card-shell.Legend .card-portrait,.card-shell.Mystic .card-portrait{background:radial-gradient(circle at 50% 40%,rgba(227,178,44,.28),transparent 65%),linear-gradient(160deg,#2a2412,#08101b)}
+.card-name{padding:9px 11px 3px;font-size:17px;font-weight:850}.card-meta{padding:0 11px 9px;color:#9cacbf;font-size:12px}
+.card-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px 11px;border-top:1px solid #25354b}
+.card-stat{display:flex;justify-content:space-between;font-size:12px}.card-stat b{color:#f1f5fa}
+.card-actions{display:flex;gap:6px;flex-wrap:wrap;padding:9px 11px;border-top:1px solid #25354b}
+.filterbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
+.filterbar select,.filterbar input{background:#101a28;color:#e8eef7;border:1px solid #33465f;border-radius:9px;padding:9px 11px}
+.grade-filter{display:flex;gap:5px;flex-wrap:wrap}.grade-filter button{min-width:66px}
+.grade-filter button.active{outline:2px solid #61a8ff;box-shadow:0 0 12px rgba(70,150,255,.18)}
+.roster-summary{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}.summary-chip{padding:7px 10px;border-radius:999px;background:#101b2a;border:1px solid #2b3d55;font-size:12px}
+.lineup-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media(max-width:800px){.lineup-grid{grid-template-columns:1fr 1fr}.card-portrait{height:130px}}
+
 </style>
 </head>
 <body>
 <div class="app">
-<aside class="side"><div class="logo">⚾ <b>BASEBALL</b> SCOUTER</div><div id="nav"></div><button class="nav" onclick="resetGame()">🔄 새 구단 시작</button></aside>
+<aside class="side"><div class="logo">⚾ <b>BASEBALL</b> SCOUTER</div><div id="nav"></div><button type="button" class="nav" onclick="return resetGame()">🔄 새 구단 시작</button></aside>
 <main class="main">
-<header><div><b id="club"></b><span id="phase" class="muted"></span></div><div class="topstats">📅 <b id="year"></b> 💰 <b id="money" class="budget"></b> ❤️ <b id="fan"></b></div></header>
+<header><div><button type="button" class="btn gray" style="margin-right:10px" onclick="go('home')">🏠 홈</button><b id="club"></b><span id="phase" class="muted"></span></div><div class="topstats">📅 <b id="year"></b> 💰 <b id="money" class="budget"></b> ❤️ <b id="fan"></b></div></header>
 <section id="content" class="content"></section>
 </main>
 </div>
 <div id="modal" class="modal hidden"><div id="modalBox"></div></div>
 
 <script>
+/* data-club-enter-handler */
+document.addEventListener("keydown",function(e){
+  if(e.key!=="Enter")return;
+  const a=document.activeElement;
+  if(a&&(a.id==="clubIn"||a.id==="yearIn")){e.preventDefault();createClub();}
+});
+
 "use strict";
 
 const KEY="BASEBALL_SCOUTER_FIXED_V4";
@@ -86,6 +114,7 @@ function load(){
     game=JSON.parse(raw);
     normalize();
     if(!game.club||!Array.isArray(game.roster))throw new Error("저장 데이터 형식이 올바르지 않습니다.");
+    if(!game.drawMinGrade)game.drawMinGrade="Off";
     return true;
   }catch(e){game=null;return false}
 }
@@ -144,7 +173,7 @@ function newGame(club,year){
     news:[],tx:[],awards:[],history:[],draws:[],train:8,last:null,stadiumLevel:0,stadiumUpgradeCost:100,championPremium:0,pendingDecision:null
   };
   game.roster.slice(0,3).forEach(p=>p.grade="Legend");
-  addNews("🏟️ 구단 창단",`${club}의 ${game.year}년 시즌을 시작합니다. 시작 예산은 80억입니다.`,"good");
+  addNews("🏟️ 구단 창단",`${club}의 ${game.year}년 시즌을 시작합니다. 시작 예산은 120억입니다.`,"good");
   save();
 }
 function addNews(title,body,type="neutral"){
@@ -171,12 +200,49 @@ function stats(p){
   if(["SP","RP"].includes(p.pos))return `${p.w}승 ${p.l}패 · ERA ${p.era.toFixed(2)}`;
   return `${p.ab?(p.h/p.ab).toFixed(3):".000"} · ${p.hr}HR · ${p.rbi}RBI`;
 }
+function detailedStats(p){
+  if(["SP","RP"].includes(p.pos)){
+    return `<div class="statline"><span>경기</span><b>${p.games}</b></div>
+    <div class="statline"><span>승-패</span><b>${p.w}-${p.l}</b></div>
+    <div class="statline"><span>ERA</span><b>${p.era.toFixed(2)}</b></div>
+    <div class="statline"><span>피로도</span><b>${p.fatigue}/100</b></div>`;
+  }
+  const avg=p.ab?(p.h/p.ab).toFixed(3):".000";
+  return `<div class="statline"><span>경기</span><b>${p.games}</b></div>
+  <div class="statline"><span>타수</span><b>${p.ab}</b></div>
+  <div class="statline"><span>안타</span><b>${p.h}</b></div>
+  <div class="statline"><span>타율</span><b>${avg}</b></div>
+  <div class="statline"><span>홈런</span><b>${p.hr}</b></div>
+  <div class="statline"><span>타점</span><b>${p.rbi}</b></div>
+  <div class="statline"><span>수비</span><b>${p.def}</b></div>
+  <div class="statline"><span>피로도</span><b>${p.fatigue}/100</b></div>`;
+}
 function playerCard(p,buttons=true){
-  return `<div class="panel"><div class="player">${avatar(p)}<div><h3>${esc(p.name)}</h3>
-  <span class="tag">${p.pos}</span><span class="tag">OVR ${p.ovr}</span><span class="tag ${p.grade}">${p.grade}</span>
-  <p class="muted">${p.age}세 · 연봉 ${p.salary}억 · 계약 ${p.left}년${p.foreign?" · 외국인":""}</p></div></div>
-  <p>📊 ${stats(p)}</p><p>XP ${p.xp}/${p.need}</p><div class="progress"><div style="width:${clamp(p.xp/p.need*100,0,100)}%"></div></div>
-  ${buttons?`<div class="actions" style="margin-top:9px"><button class="btn gray" onclick="detailPlayer('${p.id}')">상세</button><button class="btn" onclick="renamePlayer('${p.id}')">이름 변경</button><button class="btn red" onclick="releasePlayer('${p.id}')">방출</button></div>`:""}</div>`;
+  const pitcher=["SP","RP"].includes(p.pos);
+  const avg=p.ab?(p.h/p.ab).toFixed(3):".000";
+  const main1=pitcher?`ERA ${p.era.toFixed(2)}`:`AVG ${avg}`;
+  const main2=pitcher?`${p.w}-${p.l}`:`${p.hr} HR`;
+  const main3=pitcher?`경기 ${p.games}`:`${p.rbi} RBI`;
+  const portrait=p.foreign?"🌎":pitcher?"⚾":"⚾";
+  return `<div class="card-shell ${p.grade}">
+    <div class="card-top"><span class="${p.grade}">${esc(p.grade)}</span><b style="font-size:26px">${p.ovr}</b><span>${p.pos}</span></div>
+    <div class="card-portrait">${portrait}</div>
+    <div class="card-name">${esc(p.name)}</div>
+    <div class="card-meta">${p.age}세 · Lv.${Math.max(1,Math.floor(p.xp/100)+1)} · 연봉 ${p.salary}억${p.foreign?" · 외국인":""}</div>
+    <div class="card-stats">
+      <div class="card-stat"><span>${pitcher?"승-패":"타율"}</span><b>${pitcher?main2:avg}</b></div>
+      <div class="card-stat"><span>${pitcher?"ERA":"HR"}</span><b>${pitcher?p.era.toFixed(2):p.hr}</b></div>
+      <div class="card-stat"><span>${pitcher?"경기":"RBI"}</span><b>${pitcher?p.games:p.rbi}</b></div>
+      <div class="card-stat"><span>수비</span><b>${p.def}</b></div>
+    </div>
+    <div style="padding:0 11px 8px;font-size:11px;color:#9cacbf">XP ${p.xp}/${p.need}</div>
+    <div class="progress" style="margin:0 11px 9px"><div style="width:${clamp(p.xp/p.need*100,0,100)}%"></div></div>
+    ${buttons?`<div class="card-actions">
+      <button type="button" class="btn gray" onclick="detailPlayer('${p.id}')">상세</button>
+      <button type="button" class="btn" onclick="renamePlayer('${p.id}')">이름 변경</button>
+      <button type="button" class="btn red" onclick="releasePlayer('${p.id}')">방출</button>
+    </div>`:""}
+  </div>`;
 }
 
 function renderNav(){
@@ -184,6 +250,12 @@ function renderNav(){
 }
 function updateTop(){
   $("club").textContent=game.club;$("year").textContent=game.year;$("money").textContent=money(game.budget)+"억";$("fan").textContent=game.morale;$("phase").textContent=" · "+game.phase;
+}
+function resetGame(){
+  if(!confirm("현재 구단의 저장 데이터를 삭제하고 새 구단을 시작할까요?"))return false;
+  try{localStorage.removeItem(KEY)}catch(e){console.warn(e)}
+  if(typeof autoTimer!=="undefined" && autoTimer){clearTimeout(autoTimer);autoTimer=null}
+  game=null; page="home"; render(); return false;
 }
 function go(next){if(!game)return;page=next;renderNav();render()}
 function render(){
@@ -198,25 +270,25 @@ function startScreen(){
   <p>나만의 야구단을 만들고 스카우터 겸 단장으로 시즌을 운영하세요.</p>
   <div class="panel" style="max-width:650px;margin-top:18px"><h2>새 구단 만들기</h2><div class="form">
   <input id="clubIn" maxlength="20" placeholder="구단명"><input id="yearIn" type="number" value="2026" min="1900" max="2100">
-  <button class="btn" onclick="createClub()">구단 만들기</button></div>
+  <button type="button" class="btn" onclick="createClub()">구단 만들기</button></div>
   <p class="muted">시작 예산 120억 · 시즌 10위로 종료해도 예산은 50억 미만으로 내려가지 않습니다.</p>
   <p class="muted">단, 뽑기·영입 등으로 직접 돈을 쓰는 경우에는 50억 아래로 내려갈 수 있습니다.</p></div></div></div>`;
 }
 function createClub(){
-  const clubEl=$("clubIn"), yearEl=$("yearIn");
-  if(!clubEl||!yearEl)return alert("구단 생성 화면을 불러오지 못했습니다. 페이지를 새로고침해주세요.");
+  const clubEl=$("clubIn"),yearEl=$("yearIn");
+  if(!clubEl||!yearEl){alert("구단 생성 화면을 찾을 수 없습니다. 페이지를 새로고침해주세요.");return false}
   const club=clubEl.value.trim(), year=Number(yearEl.value);
-  if(!club)return alert("구단명을 입력해주세요.");
-  if(!Number.isInteger(year)||year<1900||year>2100)return alert("연도는 1900~2100 사이의 숫자로 입력해주세요.");
-  try{newGame(club,year);page="home";render();}
-  catch(err){console.error(err);alert("구단 생성 중 오류가 발생했습니다. 페이지를 새로고침한 뒤 다시 시도해주세요.");}
+  if(!club){alert("구단명을 입력해주세요.");clubEl.focus();return false}
+  if(!Number.isInteger(year)||year<1900||year>2100){alert("연도를 올바르게 입력해주세요.");yearEl.focus();return false}
+  try{newGame(club,year);page="home";render();return false}
+  catch(e){console.error(e);alert("구단 생성 중 오류가 발생했습니다.");return false}
 }
 
 function homePage(c){
   const t=game.league.find(x=>x.name===game.club);
   c.innerHTML=`<div class="hero"><div><div class="muted">BASEBALL SCOUTER</div><h1>🏟️ ${esc(game.club)}</h1>
   <p>${game.year}년 시즌 · ${game.games}/144경기</p><div class="actions">
-  <button class="btn" onclick="go('season')">⚾ 시즌 진행</button><button class="btn gray" onclick="go('roster')">👥 선수단</button><button class="btn" onclick="go('draw')">🎰 선수 뽑기</button></div></div></div>
+  <button type="button" class="btn" onclick="go('season')">⚾ 시즌 진행</button><button type="button" class="btn gray" onclick="go('roster')">👥 선수단</button><button type="button" class="btn" onclick="go('draw')">🎰 선수 뽑기</button></div></div></div>
   <div class="grid" style="margin-top:15px"><div class="panel"><div class="muted">현재 순위</div><div class="stat">${myRank()}위</div><p>${t.w}승 ${t.l}패</p></div>
   <div class="panel"><div class="muted">예산</div><div class="stat gold">${money(game.budget)}억</div><p>시즌 10위 종료 하한선: ${MIN_BUDGET}억</p></div>
   <div class="panel"><div class="muted">팬 민심</div><div class="stat">${game.morale}</div><div class="progress"><div style="width:${game.morale}%"></div></div></div></div>
@@ -228,7 +300,7 @@ function stadiumPage(c){
   c.innerHTML=`<h1>🏗️ 구장 업그레이드</h1><div class="grid2"><div class="panel"><h2>${esc(game.club)} 스타디움</h2>
   <div class="stat">Lv.${lvl} / 5</div><p>육성 효율 보너스 <b class="good">+${lvl*8}%</b></p><div class="progress"><div style="width:${lvl*20}%"></div></div></div>
   <div class="panel"><h2>다음 레벨</h2>${lvl<5?`<p>비용 <b class="gold">${cost}억</b></p><p class="muted">Lv.1 100억 → Lv.2 200억 → Lv.3 300억 → Lv.4 400억 → Lv.5 500억</p>
-  <button class="btn gold" onclick="upgradeStadium()">업그레이드</button>`:"<p class='good'>최고 레벨입니다.</p>"}</div></div>
+  <button type="button" class="btn gold" onclick="upgradeStadium()">업그레이드</button>`:"<p class='good'>최고 레벨입니다.</p>"}</div></div>
   <div class="panel" style="margin-top:15px"><h2>👑 우승 프리미엄</h2><p>우승하면 다음 시즌 육성 효율이 +10% 증가합니다. 현재 보너스: <b class="good">+${game.championPremium}%</b></p></div>`;
 }
 function upgradeStadium(){
@@ -239,16 +311,60 @@ function upgradeStadium(){
   addNews("🏗️ 구장 업그레이드",`구장 레벨이 ${game.stadiumLevel}로 올라갔습니다. 육성 효율 +${game.stadiumLevel*8}%`,"good");
   save();render();
 }
+
+let rosterGradeFilter="All", rosterSort="ovr", rosterSearch="", lineupGradeFilter="All", lineupSort="ovr";
+
+function gradeButtons(prefix,active,fn){
+  const all=["All",...GRADES];
+  return `<div class="grade-filter">${all.map(g=>`<button type="button" class="btn ${active===g?"active":""}" onclick="${fn}('${g}')">${g==="All"?"전체":g}</button>`).join("")}</div>`;
+}
+function sortPlayers(list,sort){
+  return [...list].sort((a,b)=>{
+    if(sort==="ovr")return b.ovr-a.ovr;
+    if(sort==="grade")return GRADES.indexOf(b.grade)-GRADES.indexOf(a.grade)||b.ovr-a.ovr;
+    if(sort==="level")return (b.xp/b.need)-(a.xp/a.need)||b.ovr-a.ovr;
+    if(sort==="name")return a.name.localeCompare(b.name,"ko");
+    if(sort==="pos")return a.pos.localeCompare(b.pos)||b.ovr-a.ovr;
+    return b.ovr-a.ovr;
+  });
+}
+function getFilteredPlayers(list,grade,search){
+  const q=(search||"").trim().toLowerCase();
+  return list.filter(p=>(grade==="All"||p.grade===grade)&&(!q||p.name.toLowerCase().includes(q)||p.pos.toLowerCase().includes(q)));
+}
+function setRosterGrade(g){rosterGradeFilter=g;render()}
+function setRosterSort(v){rosterSort=v;render()}
+function setRosterSearch(v){rosterSearch=v;render()}
+function setLineupGrade(g){lineupGradeFilter=g;render()}
+function setLineupSort(v){lineupSort=v;render()}
+
 function rosterPage(c){
-  c.innerHTML=`<h1>👥 선수단</h1><p class="muted">선수 이름은 기본 랜덤 이름으로 생성되며, 이름 변경은 선수단 화면에서만 가능합니다.</p><div class="grid">${game.roster.map(p=>playerCard(p)).join("")}</div>`;
+  const filtered=sortPlayers(getFilteredPlayers(game.roster,rosterGradeFilter,rosterSearch),rosterSort);
+  const counts=GRADES.map(g=>`<span class="summary-chip">${g} ${game.roster.filter(p=>p.grade===g).length}명</span>`).join("");
+  c.innerHTML=`<h1>👥 선수단</h1>
+  <p class="muted">선수 이름 변경은 이 화면에서만 가능합니다. 등급과 능력치를 기준으로 빠르게 정리할 수 있습니다.</p>
+  <div class="roster-summary"><span class="summary-chip">전체 ${game.roster.length}명</span>${counts}</div>
+  <div class="filterbar">
+    ${gradeButtons("roster",rosterGradeFilter,"setRosterGrade")}
+    <select onchange="setRosterSort(this.value)">
+      <option value="ovr" ${rosterSort==="ovr"?"selected":""}>OVR 높은 순</option>
+      <option value="grade" ${rosterSort==="grade"?"selected":""}>등급 높은 순</option>
+      <option value="level" ${rosterSort==="level"?"selected":""}>육성도 높은 순</option>
+      <option value="name" ${rosterSort==="name"?"selected":""}>이름 순</option>
+      <option value="pos" ${rosterSort==="pos"?"selected":""}>포지션 순</option>
+    </select>
+    <input value="${esc(rosterSearch)}" oninput="setRosterSearch(this.value)" placeholder="선수 이름/포지션 검색">
+  </div>
+  <div class="grid">${filtered.map(p=>playerCard(p)).join("")||`<div class="panel"><b>조건에 맞는 선수가 없습니다.</b><p class="muted">필터를 바꿔보세요.</p></div>`}</div>`;
 }
 function detailPlayer(id){
   const p=game.roster.find(x=>x.id===id);if(!p)return;
   $("modalBox").innerHTML=`<h2>⚾ ${esc(p.name)}</h2>${playerCard(p,false)}
-  <div class="grid2" style="margin-top:12px"><div class="card"><b>타격</b><p>타율 ${p.ab?(p.h/p.ab).toFixed(3):".000"} · HR ${p.hr} · RBI ${p.rbi}</p></div>
-  <div class="card"><b>수비</b><p>수비 능력 ${p.def}</p></div><div class="card"><b>계약</b><p>연봉 ${p.salary}억 · 잔여 ${p.left}년</p></div>
-  <div class="card"><b>육성</b><p>경험치 획득 배율 ×${(GRADE_INFO[p.grade].xp*xpMultiplier()).toFixed(2)}</p></div></div>
-  <div class="actions" style="margin-top:12px"><button class="btn gray" onclick="closeModal()">닫기</button></div>`;
+  <div class="grid2" style="margin-top:12px"><div class="card"><b>📊 시즌 기록</b>${detailedStats(p)}</div>
+  <div class="card"><b>🧾 계약</b><p>연봉 ${p.salary}억 · 잔여 ${p.left}년</p><p>OVR ${p.ovr} · ${p.grade}</p></div>
+  <div class="card"><b>📈 육성</b><p>경험치 ${p.xp}/${p.need}</p><p>획득 배율 ×${(GRADE_INFO[p.grade].xp*xpMultiplier()).toFixed(2)}</p></div>
+  <div class="card"><b>🧤 능력치</b><p>수비 ${p.def} · 피로도 ${p.fatigue}</p></div></div>
+  <div class="actions" style="margin-top:12px"><button type="button" class="btn gray" onclick="closeModal()">닫기</button></div>`;
   $("modal").classList.remove("hidden");
 }
 function closeModal(){$("modal").classList.add("hidden");$("modalBox").innerHTML=""}
@@ -256,7 +372,8 @@ function renamePlayer(id){
   const p=game.roster.find(x=>x.id===id);if(!p)return;
   const n=prompt("새 선수 이름을 입력하세요.",p.name);
   if(n===null)return;if(!n.trim())return alert("이름을 입력해주세요.");
-  addNews("✏️ 선수 이름 변경",`${p.name}의 이름이 변경되었습니다.`);save();render();
+  const old=p.name;p.name=n.trim();
+  addNews("✏️ 선수 이름 변경",`${old}의 이름이 ${p.name}(으)로 변경되었습니다.`);save();render();
 }
 function releasePlayer(id){
   const i=game.roster.findIndex(x=>x.id===id);if(i<0)return;const p=game.roster[i];
@@ -264,24 +381,53 @@ function releasePlayer(id){
   game.roster.splice(i,1);addTx("방출",p,"선수 방출");game.morale=clamp(game.morale-2,0,100);addNews("🚪 선수 방출",`${p.name}을(를) 방출했습니다.`);save();render();
 }
 function lineupPage(c){
-  const list=[...game.roster].sort((a,b)=>b.ovr-a.ovr);
-  c.innerHTML=`<h1>📋 라인업</h1><p class="muted">현재 OVR 기준 추천 라인업입니다.</p><div class="grid">${list.slice(0,9).map((p,i)=>`<div class="panel"><b>${i+1}번</b>${playerCard(p,false)}</div>`).join("")}</div>`;
+  let list=sortPlayers(getFilteredPlayers(game.roster,lineupGradeFilter,""),lineupSort);
+  const starters=list.slice(0,9), bench=list.slice(9);
+  c.innerHTML=`<h1>📋 라인업</h1>
+  <p class="muted">등급 필터와 정렬로 선수를 정리한 뒤 주전 후보를 확인할 수 있습니다.</p>
+  <div class="filterbar">${gradeButtons("lineup",lineupGradeFilter,"setLineupGrade")}
+    <select onchange="setLineupSort(this.value)">
+      <option value="ovr" ${lineupSort==="ovr"?"selected":""}>OVR 높은 순</option>
+      <option value="grade" ${lineupSort==="grade"?"selected":""}>등급 높은 순</option>
+      <option value="level" ${lineupSort==="level"?"selected":""}>육성도 높은 순</option>
+      <option value="pos" ${lineupSort==="pos"?"selected":""}>포지션 순</option>
+    </select>
+    <button type="button" class="btn" onclick="autoLineup()">⚡ 자동 편성</button>
+  </div>
+  <div class="panel"><h2>⭐ 추천 주전 ${starters.length}/9</h2>
+    <div class="lineup-grid">${starters.map((p,i)=>`<div><div class="muted" style="margin-bottom:5px">${i+1}번 후보</div>${playerCard(p,false)}</div>`).join("")||"<p>선수가 없습니다.</p>"}</div>
+  </div>
+  <div class="panel" style="margin-top:14px"><h2>🪑 벤치 / 후보</h2>
+    <div class="lineup-grid">${bench.map(p=>playerCard(p,false)).join("")||"<p class='muted'>벤치 선수가 없습니다.</p>"}</div>
+  </div>`;
+}
+function autoLineup(){
+  lineupGradeFilter="All";lineupSort="ovr";page="lineup";render();
 }
 function developPage(c){
   const mult=xpMultiplier();
+  const filtered=sortPlayers(getFilteredPlayers(game.roster,rosterGradeFilter,rosterSearch),rosterSort);
   c.innerHTML=`<h1>📈 선수 육성</h1>
-  <p class="muted">배팅, 투구, 헬스, 메디컬 훈련을 선택해 선수의 경험치를 올립니다.</p>
+  <p class="muted">등급별 선수 정리 후 원하는 선수에게 바로 훈련을 실행할 수 있습니다.</p>
   <div class="notice">오늘 남은 훈련 횟수: <b class="gold">${game.train}회</b> · 전체 육성 배율 ×${mult.toFixed(2)}</div>
-  <div class="grid">${game.roster.map(p=>`<div class="panel training-card">${playerCard(p,false)}
+  <div class="filterbar">${gradeButtons("develop",rosterGradeFilter,"setRosterGrade")}
+    <select onchange="setRosterSort(this.value)">
+      <option value="ovr" ${rosterSort==="ovr"?"selected":""}>OVR 높은 순</option>
+      <option value="grade" ${rosterSort==="grade"?"selected":""}>등급 높은 순</option>
+      <option value="level" ${rosterSort==="level"?"selected":""}>육성도 높은 순</option>
+    </select>
+    <input value="${esc(rosterSearch)}" oninput="setRosterSearch(this.value)" placeholder="선수 검색">
+  </div>
+  <div class="grid">${filtered.map(p=>`<div class="panel training-card">${playerCard(p,false)}
     <div class="training-buttons actions" style="margin-top:12px">
-      <button class="btn green" onclick="trainPlayer('${p.id}','batting')">🏏 배팅<br>+${Math.round(18*GRADE_INFO[p.grade].xp*mult)} XP</button>
-      <button class="btn" onclick="trainPlayer('${p.id}','pitching')">⚾ 투구<br>+${Math.round(18*GRADE_INFO[p.grade].xp*mult)} XP</button>
+      <button type="button" class="btn green" onclick="trainPlayer('${p.id}','batting')">🏏 배팅<br>+${Math.round(18*GRADE_INFO[p.grade].xp*mult)} XP</button>
+      <button type="button" class="btn" onclick="trainPlayer('${p.id}','pitching')">⚾ 투구<br>+${Math.round(18*GRADE_INFO[p.grade].xp*mult)} XP</button>
     </div>
     <div class="training-buttons actions" style="margin-top:8px">
-      <button class="btn gray" onclick="trainPlayer('${p.id}','fitness')">💪 헬스<br>+${Math.round(15*GRADE_INFO[p.grade].xp*mult)} XP</button>
-      <button class="btn gold" onclick="trainPlayer('${p.id}','medical')">🩺 메디컬<br>+${Math.round(12*GRADE_INFO[p.grade].xp*mult)} XP</button>
+      <button type="button" class="btn gray" onclick="trainPlayer('${p.id}','fitness')">💪 헬스<br>+${Math.round(15*GRADE_INFO[p.grade].xp*mult)} XP</button>
+      <button type="button" class="btn gold" onclick="trainPlayer('${p.id}','medical')">🩺 메디컬<br>+${Math.round(12*GRADE_INFO[p.grade].xp*mult)} XP</button>
     </div>
-  </div>`).join("")}</div>`;
+  </div>`).join("")||`<div class="panel">조건에 맞는 선수가 없습니다.</div>`}</div>`;
 }
 function trainPlayer(id,type){
   const p=game.roster.find(x=>x.id===id); if(!p)return;
@@ -297,10 +443,19 @@ function trainPlayer(id,type){
   save();render();
 }
 function drawPage(c){
- c.innerHTML=`<h1>🎰 선수 뽑기</h1><div class="grid2">
- <div class="panel"><h2>1회 뽑기</h2><div class="stat gold">2억</div><button class="btn" onclick="drawPlayers(1)">1회 뽑기</button></div>
- <div class="panel"><h2>10회 뽑기</h2><div class="stat gold">18억</div><p class="muted">10번째는 Rare 이상 확정</p><button class="btn gold" onclick="drawPlayers(10)">10회 뽑기</button></div></div>
- <div class="panel" style="margin-top:15px"><h2>최근 결과</h2>${game.draws.slice(0,10).map(d=>`<div class="news"><b class="${d.grade}">${esc(d.grade)} · OVR ${d.ovr}</b> · ${esc(d.name)}</div>`).join("")||"<p class='muted'>아직 결과가 없습니다.</p>"}</div>`;
+ const setting=game.drawMinGrade||"Off";
+ const labels={Off:"사용 안 함",Rare:"Rare 미만 자동 방출",Epic:"Epic 미만 자동 방출",Legend:"Legend 미만 자동 방출",Mystic:"Mystic 미만 자동 방출"};
+ c.innerHTML=`<h1>🎰 선수 뽑기</h1>
+ <div class="panel"><h2>⚙️ 자동 방출 설정</h2><p class="muted">설정한 등급보다 낮은 선수는 뽑기 결과 공개 직후 자동으로 방출됩니다.</p>
+ <select id="drawMinGrade" onchange="setDrawMinGrade(this.value)">
+ ${Object.keys(labels).map(k=>`<option value="${k}" ${setting===k?"selected":""}>${labels[k]}</option>`).join("")}</select></div>
+ <div class="grid2" style="margin-top:15px">
+ <div class="panel"><h2>1회 뽑기</h2><div class="stat gold">2억</div><button type="button" class="btn" onclick="drawPlayers(1)">1회 뽑기</button></div>
+ <div class="panel"><h2>10회 뽑기</h2><div class="stat gold">18억</div><p class="muted">10번째는 Rare 이상 확정</p><button type="button" class="btn gold" onclick="drawPlayers(10)">10회 뽑기</button></div></div>
+ <div class="panel" style="margin-top:15px"><h2>최근 뽑기 결과</h2>${game.draws.slice(0,15).map(d=>`<div class="news"><b class="${d.grade}">${esc(d.grade)} · OVR ${d.ovr}</b> · ${esc(d.name)} ${d.released?"· 자동 방출":""}</div>`).join("")||"<p class='muted'>아직 결과가 없습니다.</p>"}</div>`;
+}
+function setDrawMinGrade(value){
+ game.drawMinGrade=GRADES.includes(value)?value:"Off";save();render();
 }
 function drawPlayers(n){
  const cost=n===10?18:2;
@@ -310,32 +465,46 @@ function drawPlayers(n){
  for(let i=0;i<n;i++){
    let p=createPlayer();
    if(n===10&&i===9&&p.grade==="Common")p=createPlayer({grade:pick(["Rare","Epic","Legend","Mystic"])});
-   game.roster.push(p); game.draws.unshift({id:uid(),year:game.year,name:p.name,grade:p.grade,ovr:p.ovr});
-   addTx("선수 뽑기",p,`${n}회 뽑기`); results.push(p);
+   results.push(p);
  }
- save(); showDrawReveal(results,n);
+ const min=game.drawMinGrade||"Off", threshold=min==="Off"?-1:GRADES.indexOf(min);
+ const kept=[],released=[];
+ results.forEach(p=>{
+   const low=min!=="Off"&&GRADES.indexOf(p.grade)<threshold;
+   if(low){
+     released.push(p);
+     game.draws.unshift({id:uid(),year:game.year,name:p.name,grade:p.grade,ovr:p.ovr,released:true});
+     addTx("선수 뽑기·자동 방출",p,`설정 등급 ${min} 미만`);
+   }else{
+     game.roster.push(p);kept.push(p);
+     game.draws.unshift({id:uid(),year:game.year,name:p.name,grade:p.grade,ovr:p.ovr,released:false});
+     addTx("선수 뽑기",p,`${n}회 뽑기`);
+   }
+ });
+ if(released.length)addNews("🚪 뽑기 자동 방출",`${released.length}명의 선수가 설정 등급 미만이라 자동 방출되었습니다.`,"bad");
+ save();showDrawReveal(results,n,kept,released);
 }
-function showDrawReveal(results,n){
+function showDrawReveal(results,n,kept,released){
  const best=results.reduce((a,b)=>GRADES.indexOf(a.grade)>GRADES.indexOf(b.grade)?a:b);
  const cls=best.grade.toLowerCase();
  $("modalBox").innerHTML=`<div class="draw-stage ${cls}" id="drawStage"><div class="orb"></div><div class="draw-text" id="drawText">✨ 선수 스카우팅 중...</div></div>
- <div id="drawResult" style="display:none;margin-top:14px"><h2 class="${best.grade}">🎉 ${esc(best.grade)} 등장!</h2>
- <div class="grid">${results.map((p,i)=>`<div class="panel reveal-card" style="animation-delay:${i*45}ms">${playerCard(p,false)}</div>`).join("")}</div>
- <button class="btn" onclick="closeModal();go('draw')">확인</button></div>`;
+ <div id="drawResult" style="display:none;margin-top:14px"><h2 class="${best.grade}">🎉 ${esc(best.grade)} 등급 등장!</h2>
+ <p class="muted">획득 ${kept.length}명 · 자동 방출 ${released.length}명</p>
+ <div class="grid">${results.map((p,i)=>`<div class="panel reveal-card" style="animation-delay:${i*45}ms;opacity:${released.includes(p)?".45":"1"}">${playerCard(p,false)}${released.includes(p)?'<div class="notice">🚪 자동 방출</div>':""}</div>`).join("")}</div>
+ <button type="button" class="btn" onclick="closeModal();go('draw')">확인</button></div>`;
  $("modal").classList.remove("hidden");
  const text=$("drawText"),stage=$("drawStage"),result=$("drawResult");
  setTimeout(()=>{if(text)text.textContent="선수 데이터 분석 중..."},450);
  setTimeout(()=>{if(text)text.textContent="등급 판정 중..."},850);
  setTimeout(()=>{
    if(!text||!stage||!result)return;
-   text.textContent=`${best.grade} 등급 발견!`;
-   stage.className=`draw-stage ${cls}`;
+   text.textContent=`${best.grade} 등급 발견!`;stage.className=`draw-stage ${cls}`;
    setTimeout(()=>{result.style.display="block";stage.style.minHeight="180px"},600);
  },1500+Math.min(1200,n*70));
 }
 function scoutPage(c){
   game.scoutPool=Array.from({length:10},()=>createPlayer({ovr:rand(52,78)}));
-  c.innerHTML=`<h1>🔎 국내 스카우팅</h1><div class="grid">${game.scoutPool.map(p=>`<div class="panel">${playerCard(p,false)}<p>영입 비용 ${p.salary}억</p><button class="btn" onclick="signScouted('${p.id}')">영입</button></div>`).join("")}</div>`;
+  c.innerHTML=`<h1>🔎 국내 스카우팅</h1><div class="grid">${game.scoutPool.map(p=>`<div class="panel">${playerCard(p,false)}<p>영입 비용 ${p.salary}억</p><button type="button" class="btn" onclick="signScouted('${p.id}')">영입</button></div>`).join("")}</div>`;
 }
 function signScouted(id){
   const p=(game.scoutPool||[]).find(x=>x.id===id);
@@ -344,13 +513,13 @@ function signScouted(id){
 }
 function signPlayer(p){
   p=normalizePlayer(p);
-  if(!n||!n.trim())return;if(game.budget-p.salary<0)return alert("예산이 부족합니다.");
+  if(game.budget-p.salary<0)return alert("예산이 부족합니다.");
   game.budget-=p.salary;game.roster.push(p);addTx("국내 영입",p,"스카우팅");addNews("🔎 국내 영입",`${p.name}을(를) 영입했습니다.`,"good");save();go("scout");
 }
 function overseasPage(c){
   const count=game.roster.filter(p=>p.foreign).length;
   game.overseasPool=Array.from({length:8},()=>createPlayer({foreign:true,ovr:rand(60,80)}));
-  c.innerHTML=`<h1>🌎 해외 스카우팅</h1><div class="notice">외국인 선수 ${count}/3명 · 최대 3명</div><div class="grid">${game.overseasPool.map(p=>`<div class="panel">${playerCard(p,false)}<p>영입 비용 ${p.salary}억</p><button class="btn" ${count>=3?"disabled":""} onclick="signForeignScouted('${p.id}')">영입</button></div>`).join("")}</div>`;
+  c.innerHTML=`<h1>🌎 해외 스카우팅</h1><div class="notice">외국인 선수 ${count}/3명 · 최대 3명</div><div class="grid">${game.overseasPool.map(p=>`<div class="panel">${playerCard(p,false)}<p>영입 비용 ${p.salary}억</p><button type="button" class="btn" ${count>=3?"disabled":""} onclick="signForeignScouted('${p.id}')">영입</button></div>`).join("")}</div>`;
 }
 function signForeignScouted(id){
   const p=(game.overseasPool||[]).find(x=>x.id===id);
@@ -360,26 +529,26 @@ function signForeignScouted(id){
 function signForeign(p){
   if(game.roster.filter(x=>x.foreign).length>=3)return alert("외국인 선수는 최대 3명입니다.");
   p=normalizePlayer(p);p.foreign=true;
-  if(!n||!n.trim())return;if(game.budget-p.salary<0)return alert("예산이 부족합니다.");
+  if(game.budget-p.salary<0)return alert("예산이 부족합니다.");
   game.budget-=p.salary;game.roster.push(p);addTx("해외 영입",p,"외국인 선수");addNews("🌎 해외 영입",`${p.name}과 계약했습니다.`,"good");save();go("overseas");
 }
 function draftPage(c){
-  c.innerHTML=`<h1>📋 신인 드래프트</h1><p class="muted">선수 이름은 기본 이름을 사용하거나 지명 시 직접 변경할 수 있습니다.</p><div class="grid">${game.draft.slice(0,18).map(p=>`<div class="panel">${playerCard(p,false)}<button class="btn green" onclick="draftPlayer('${p.id}')">지명</button></div>`).join("")}</div>`;
+  c.innerHTML=`<h1>📋 신인 드래프트</h1><p class="muted">선수 이름은 선수단으로 영입한 뒤 선수단 화면에서만 변경할 수 있습니다.</p><div class="grid">${game.draft.slice(0,18).map(p=>`<div class="panel">${playerCard(p,false)}<button type="button" class="btn green" onclick="draftPlayer('${p.id}')">지명</button></div>`).join("")}</div>`;
 }
 function draftPlayer(id){
   const i=game.draft.findIndex(p=>p.id===id);if(i<0)return;const p=game.draft[i];
-  if(!n||!n.trim())return;game.roster.push(p);game.draft.splice(i,1);addTx("신인 드래프트",p,"지명");addNews("📋 신인 지명",`${p.name}을(를) 지명했습니다.`,"good");save();go("draft");
+  game.roster.push(p);game.draft.splice(i,1);addTx("신인 드래프트",p,"지명");addNews("📋 신인 지명",`${p.name}을(를) 지명했습니다.`,"good");save();go("draft");
 }
 function faPage(c){
-  c.innerHTML=`<h1>💵 FA 시장</h1><div class="grid">${game.fa.map(p=>`<div class="panel">${playerCard(p,false)}<p>${p.salary}억 × ${p.years}년</p><button class="btn" onclick="faPlayer('${p.id}')">FA 영입</button></div>`).join("")}</div>`;
+  c.innerHTML=`<h1>💵 FA 시장</h1><div class="grid">${game.fa.map(p=>`<div class="panel">${playerCard(p,false)}<p>${p.salary}억 × ${p.years}년</p><button type="button" class="btn" onclick="faPlayer('${p.id}')">FA 영입</button></div>`).join("")}</div>`;
 }
 function faPlayer(id){
   const i=game.fa.findIndex(p=>p.id===id);if(i<0)return;const p=game.fa[i],cost=p.salary*p.years*.8;
   if(game.budget-cost<0)return alert(`계약에 ${money(cost)}억이 필요합니다.`);
-  if(!n||!n.trim())return;game.budget-=cost;game.roster.push(p);game.fa.splice(i,1);addTx("FA 영입",p,`${p.years}년 계약, 할인 적용`);addNews("💵 FA 영입",`${p.name}과 계약했습니다.`,"good");save();go("fa");
+  game.budget-=cost;game.roster.push(p);game.fa.splice(i,1);addTx("FA 영입",p,`${p.years}년 계약, 할인 적용`);addNews("💵 FA 영입",`${p.name}과 계약했습니다.`,"good");save();go("fa");
 }
 function tradePage(c){
-  c.innerHTML=`<h1>🤝 트레이드</h1><p class="muted">선수를 선택하면 비슷한 전력의 교환 선수가 생성됩니다.</p><div class="grid">${game.roster.slice(0,18).map(p=>`<div class="panel">${playerCard(p,false)}<button class="btn" onclick="tradePlayer('${p.id}')">트레이드</button></div>`).join("")}</div>`;
+  c.innerHTML=`<h1>🤝 트레이드</h1><p class="muted">선수를 선택하면 비슷한 전력의 교환 선수가 생성됩니다.</p><div class="grid">${game.roster.slice(0,18).map(p=>`<div class="panel">${playerCard(p,false)}<button type="button" class="btn" onclick="tradePlayer('${p.id}')">트레이드</button></div>`).join("")}</div>`;
 }
 function tradePlayer(id){
   const p=game.roster.find(x=>x.id===id);if(!p)return;const q=createPlayer({ovr:clamp(p.ovr+rand(-4,4),50,90)});
@@ -392,8 +561,8 @@ function seasonPage(c){
   const t=game.league.find(x=>x.name===game.club);
   c.innerHTML=`<h1>⚾ ${game.year} 시즌</h1><p class="muted">${game.games}/144경기 · ${game.phase}</p>
   <div class="panel"><h2>시즌 진행</h2><div class="actions">${game.games<144?
-  `<button class="btn" onclick="startAuto(1)">▶ 경기 진행</button><button class="btn" onclick="startAuto(20)">⏩ 20경기 자동 진행</button><button class="btn gray" onclick="startAuto(144)">⏩ 시즌 자동 진행</button>`:
-  `<button class="btn gold" onclick="finishSeason()">🏁 시즌 종료 및 시상식</button>`}</div>
+  `<button type="button" class="btn" onclick="startAuto(1)">▶ 경기 진행</button><button type="button" class="btn" onclick="startAuto(20)">⏩ 20경기 자동 진행</button><button type="button" class="btn gray" onclick="startAuto(144)">⏩ 시즌 자동 진행</button>`:
+  `<button type="button" class="btn gold" onclick="finishSeason()">🏁 시즌 종료 및 시상식</button>`}</div>
   <p class="muted">자동 진행 중에는 경기 결과가 시간차로 표시됩니다. 결정적 상황이 발생하면 선택지가 나타납니다.</p></div>
   <div class="grid2" style="margin-top:15px"><div class="panel"><h2>🏆 순위</h2>${standings().map(x=>`<div class="rank ${x.name===game.club?"me":""}"><b>${x.rank}</b><span>${esc(x.name)}</span><span>${x.w}승</span><span>${x.l}패</span><span>${(x.w/(x.w+x.l||1)*100).toFixed(1)}%</span></div>`).join("")}</div>
   <div class="panel"><h2>⭐ 주전 기록</h2>${[...game.roster].sort((a,b)=>b.ovr-a.ovr).slice(0,9).map(p=>`<div class="news"><b>${esc(p.name)}</b> <span class="tag">${p.pos}</span><span class="tag ${p.grade}">${p.grade}</span><div class="muted">${stats(p)}</div></div>`).join("")}</div></div>`;
@@ -459,7 +628,7 @@ function showDecision(){
   const options=bat?[["💥 강하게 휘두르기",.62],["👁️ 공을 신중히 고르기",.70],["🛡️ 어떻게든 치기",.78]]:
     [["🔥 직구로 구위로 누르기",.62],["🎯 맞춰잡기",.72],["🌀 변화구로 도망가는 피칭",.80]];
   $("modalBox").innerHTML=`<h2>${bat?"🔥 결정적 타석 찬스!":"⚡ 결정적 투구 상황!"}</h2><p>${esc(p.name)}에게 중요한 승부가 찾아왔습니다.</p>
-  <div class="grid">${options.map((o,i)=>`<button class="btn" onclick="resolveDecision(${i})">${o[0]}<br><small>성공 확률 약 ${Math.round(o[1]*100)}%</small></button>`).join("")}</div>`;
+  <div class="grid">${options.map((o,i)=>`<button type="button" class="btn" onclick="resolveDecision(${i})">${o[0]}<br><small>성공 확률 약 ${Math.round(o[1]*100)}%</small></button>`).join("")}</div>`;
   $("modal").classList.remove("hidden");
 }
 function resolveDecision(i){
@@ -501,7 +670,7 @@ function showSeasonAwards(a){
   <div class="grid2"><div class="card"><b>💥 타이틀홀더</b><p>${esc(a.hr)}</p></div><div class="card"><b>⚡ 투수 타이틀</b><p>${esc(a.era)}</p></div>
   <div class="card"><b>👑 MVP</b><p>${esc(a.mvp)}</p></div><div class="card"><b>🧤 골든 글러브</b><p>${esc(a.gold)}</p></div></div>
   ${a.champion?`<div class="notice">👑 <b>우승 프리미엄 획득!</b><br>다음 시즌 선수 육성 효율이 +10% 증가합니다.</div>`:""}
-  <button class="btn gold" onclick="advanceToNextSeason()">📅 다음 시즌으로</button>`;
+  <button type="button" class="btn gold" onclick="advanceToNextSeason()">📅 다음 시즌으로</button>`;
   $("modal").classList.remove("hidden");
 }
 function advanceToNextSeason(){
