@@ -134,6 +134,15 @@ function normalize(){
   game.prospects=game.prospects.map(normalizePlayer);
   game.draft=game.draft.map(normalizePlayer);
   game.fa=game.fa.map(normalizePlayer);
+  if(!game.lineup||typeof game.lineup!=="object")game.lineup={};
+  for(const k of ["batting","starting","bullpen"]){
+    const n=k==="batting"?9:5;
+    if(!Array.isArray(game.lineup[k]))game.lineup[k]=[];
+    game.lineup[k]=game.lineup[k].slice(0,n);
+    while(game.lineup[k].length<n)game.lineup[k].push(null);
+  }
+  const ids=new Set(game.roster.map(p=>p.id));
+  for(const k of ["batting","starting","bullpen"])game.lineup[k]=game.lineup[k].map(id=>ids.has(id)?id:null);
 }
 function normalizePlayer(p){
   p=p||{};
@@ -170,7 +179,7 @@ function newGame(club,year){
     prospects:Array.from({length:15},()=>createPlayer({age:rand(18,22),ovr:rand(47,67),salary:1})),
     draft:Array.from({length:30},()=>createPlayer({age:rand(18,22),ovr:rand(47,67),salary:1})),
     fa:Array.from({length:12},()=>createPlayer({ovr:rand(56,75)})),
-    news:[],tx:[],awards:[],history:[],draws:[],train:8,last:null,stadiumLevel:0,stadiumUpgradeCost:100,championPremium:0,pendingDecision:null
+    news:[],tx:[],awards:[],history:[],draws:[],train:8,last:null,stadiumLevel:0,stadiumUpgradeCost:100,championPremium:0,pendingDecision:null,lineup:{batting:Array(9).fill(null),starting:Array(5).fill(null),bullpen:Array(5).fill(null)}
   };
   game.roster.slice(0,3).forEach(p=>p.grade="Legend");
   addNews("🏟️ 구단 창단",`${club}의 ${game.year}년 시즌을 시작합니다. 시작 예산은 120억입니다.`,"good");
@@ -381,28 +390,79 @@ function releasePlayer(id){
   game.roster.splice(i,1);addTx("방출",p,"선수 방출");game.morale=clamp(game.morale-2,0,100);addNews("🚪 선수 방출",`${p.name}을(를) 방출했습니다.`);save();render();
 }
 function lineupPage(c){
-  let list=sortPlayers(getFilteredPlayers(game.roster,lineupGradeFilter,""),lineupSort);
-  const starters=list.slice(0,9), bench=list.slice(9);
-  c.innerHTML=`<h1>📋 라인업</h1>
-  <p class="muted">등급 필터와 정렬로 선수를 정리한 뒤 주전 후보를 확인할 수 있습니다.</p>
-  <div class="filterbar">${gradeButtons("lineup",lineupGradeFilter,"setLineupGrade")}
-    <select onchange="setLineupSort(this.value)">
-      <option value="ovr" ${lineupSort==="ovr"?"selected":""}>OVR 높은 순</option>
-      <option value="grade" ${lineupSort==="grade"?"selected":""}>등급 높은 순</option>
-      <option value="level" ${lineupSort==="level"?"selected":""}>육성도 높은 순</option>
-      <option value="pos" ${lineupSort==="pos"?"selected":""}>포지션 순</option>
-    </select>
-    <button type="button" class="btn" onclick="autoLineup()">⚡ 자동 편성</button>
-  </div>
-  <div class="panel"><h2>⭐ 추천 주전 ${starters.length}/9</h2>
-    <div class="lineup-grid">${starters.map((p,i)=>`<div><div class="muted" style="margin-bottom:5px">${i+1}번 후보</div>${playerCard(p,false)}</div>`).join("")||"<p>선수가 없습니다.</p>"}</div>
-  </div>
-  <div class="panel" style="margin-top:14px"><h2>🪑 벤치 / 후보</h2>
-    <div class="lineup-grid">${bench.map(p=>playerCard(p,false)).join("")||"<p class='muted'>벤치 선수가 없습니다.</p>"}</div>
-  </div>`;
+  ensureLineup();
+  const bf=game.lineup.batting.filter(Boolean).length, sf=game.lineup.starting.filter(Boolean).length, rf=game.lineup.bullpen.filter(Boolean).length;
+  c.innerHTML=`<h1>📋 라인업 편성</h1>
+  <p class="muted">타자 9명, 선발 5명, 불펜 5명을 각각 편성합니다. 같은 선수는 중복 등록할 수 없습니다.</p>
+  <div class="filterbar"><button type="button" class="btn" onclick="autoLineup()">⚡ 자동 편성</button>
+    <span class="summary-chip">타자 ${bf}/9</span><span class="summary-chip">선발 ${sf}/5</span><span class="summary-chip">불펜 ${rf}/5</span></div>
+  <div class="panel"><h2>🏏 타자 9명</h2><div class="lineup-grid">${BATTING_SLOTS.map(([pos,label],i)=>lineupSlot("batting",i,label,pos)).join("")}</div></div>
+  <div class="panel" style="margin-top:14px"><h2>🔥 선발 5명</h2><div class="lineup-grid">${Array.from({length:5},(_,i)=>lineupSlot("starting",i,`선발 ${i+1}`,"SP")).join("")}</div></div>
+  <div class="panel" style="margin-top:14px"><h2>🧨 불펜 5명</h2><div class="lineup-grid">${Array.from({length:5},(_,i)=>lineupSlot("bullpen",i,`불펜 ${i+1}`,"RP")).join("")}</div></div>`;
 }
+const BATTING_SLOTS=[
+  ["C","포수"],["1B","1루수"],["2B","2루수"],["3B","3루수"],["SS","유격수"],
+  ["LF","좌익수"],["CF","중견수"],["RF","우익수"],["DH","지명타자"]
+];
+
+function ensureLineup(){
+  if(!game.lineup)game.lineup={};
+  for(const k of ["batting","starting","bullpen"]){
+    const n=k==="batting"?9:5;
+    if(!Array.isArray(game.lineup[k]))game.lineup[k]=[];
+    while(game.lineup[k].length<n)game.lineup[k].push(null);
+    game.lineup[k]=game.lineup[k].slice(0,n);
+  }
+  const ids=new Set(game.roster.map(p=>p.id));
+  for(const k of ["batting","starting","bullpen"])game.lineup[k]=game.lineup[k].map(id=>ids.has(id)?id:null);
+}
+
+function setLineupSlot(kind,index,id){
+  ensureLineup();
+  if(id && [...game.lineup.batting,...game.lineup.starting,...game.lineup.bullpen]
+    .some((x,i,arr)=>x===id && !(kind==="batting" && i===index))){
+    // Same-player duplication is prevented, except when replacing the exact batting slot.
+    const all=[...game.lineup.batting,...game.lineup.starting,...game.lineup.bullpen];
+    const currentIndex=kind==="batting"?index:(kind==="starting"?9+index:14+index);
+    if(all.some((x,i)=>x===id&&i!==currentIndex))return alert("같은 선수는 한 곳에만 등록할 수 있습니다.");
+  }
+  game.lineup[kind][index]=id||null;
+  save();render();
+}
+
 function autoLineup(){
-  lineupGradeFilter="All";lineupSort="ovr";page="lineup";render();
+  ensureLineup();
+  const used=new Set();
+  game.lineup.batting=BATTING_SLOTS.map(([pos])=>{
+    const p=game.roster.filter(x=>x.pos===pos&&!used.has(x.id)).sort((a,b)=>b.ovr-a.ovr)[0];
+    if(p)used.add(p.id);
+    return p?p.id:null;
+  });
+  BATTING_SLOTS.forEach((_,i)=>{
+    if(game.lineup.batting[i])return;
+    const p=game.roster.filter(x=>!used.has(x.id)&&!["SP","RP"].includes(x.pos)).sort((a,b)=>b.ovr-a.ovr)[0];
+    if(p){game.lineup.batting[i]=p.id;used.add(p.id);}
+  });
+  game.lineup.starting=game.roster.filter(p=>p.pos==="SP").sort((a,b)=>b.ovr-a.ovr).slice(0,5).map(p=>p.id);
+  game.lineup.bullpen=game.roster.filter(p=>p.pos==="RP").sort((a,b)=>b.ovr-a.ovr).slice(0,5).map(p=>p.id);
+  while(game.lineup.starting.length<5)game.lineup.starting.push(null);
+  while(game.lineup.bullpen.length<5)game.lineup.bullpen.push(null);
+  save();render();
+}
+
+function lineupSlot(kind,index,label,pos){
+  const selected=game.lineup[kind][index];
+  const options=game.roster.filter(p=>{
+    if(kind==="batting")return p.pos===pos || (pos==="DH"&&!["SP","RP"].includes(p.pos));
+    return p.pos===(kind==="starting"?"SP":"RP");
+  }).sort((a,b)=>b.ovr-a.ovr);
+  return `<div class="panel" style="padding:12px">
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px"><b>${index+1}. ${label}</b><span class="muted">${pos}</span></div>
+    <select style="width:100%" onchange="setLineupSlot('${kind}',${index},this.value)">
+      <option value="">선수 선택</option>
+      ${options.map(p=>`<option value="${p.id}" ${p.id===selected?"selected":""}>${esc(p.name)} · OVR ${p.ovr} · ${p.grade}</option>`).join("")}
+    </select>
+  </div>`;
 }
 function developPage(c){
   const mult=xpMultiplier();
@@ -560,28 +620,30 @@ function tradePlayer(id){
 function seasonPage(c){
   const t=game.league.find(x=>x.name===game.club);
   c.innerHTML=`<h1>⚾ ${game.year} 시즌</h1><p class="muted">${game.games}/144경기 · ${game.phase}</p>
-  <div class="panel"><h2>시즌 진행</h2><div class="actions">${game.games<144?
+  <div class="panel"><h2>시즌 진행</h2><div class="progress" style="height:10px;margin:10px 0"><div style="width:${clamp(game.games/144*100,0,100)}%"></div></div><div class="actions">${game.games<144?
   `<button type="button" class="btn" onclick="startAuto(1)">▶ 경기 진행</button><button type="button" class="btn" onclick="startAuto(20)">⏩ 20경기 자동 진행</button><button type="button" class="btn gray" onclick="startAuto(144)">⏩ 시즌 자동 진행</button>`:
   `<button type="button" class="btn gold" onclick="finishSeason()">🏁 시즌 종료 및 시상식</button>`}</div>
   <p class="muted">자동 진행 중에는 경기 결과가 시간차로 표시됩니다. 결정적 상황이 발생하면 선택지가 나타납니다.</p></div>
   <div class="grid2" style="margin-top:15px"><div class="panel"><h2>🏆 순위</h2>${standings().map(x=>`<div class="rank ${x.name===game.club?"me":""}"><b>${x.rank}</b><span>${esc(x.name)}</span><span>${x.w}승</span><span>${x.l}패</span><span>${(x.w/(x.w+x.l||1)*100).toFixed(1)}%</span></div>`).join("")}</div>
   <div class="panel"><h2>⭐ 주전 기록</h2>${[...game.roster].sort((a,b)=>b.ovr-a.ovr).slice(0,9).map(p=>`<div class="news"><b>${esc(p.name)}</b> <span class="tag">${p.pos}</span><span class="tag ${p.grade}">${p.grade}</span><div class="muted">${stats(p)}</div></div>`).join("")}</div></div>`;
 }
+let autoRemaining=0;
+
 function startAuto(target){
-  if(autoTimer)return;
-  if(game.games>=144)return;
-  const wanted=Math.min(target,144-game.games);
-  let done=0;
+  if(autoTimer){clearTimeout(autoTimer);autoTimer=null}
+  if(!game||game.games>=144)return;
+  autoRemaining=Math.min(Math.max(1,Number(target)||1),144-game.games);
   game.phase="시즌 진행 중";save();render();
   const step=()=>{
+    if(!game||game.games>=144||autoRemaining<=0){autoTimer=null;autoRemaining=0;save();render();return}
     if(game.pendingDecision){autoTimer=null;return}
-    if(done>=wanted){autoTimer=null;save();render();return}
-    simulateGame();done++;
-    if(game.pendingDecision){autoTimer=null;render();return}
+    simulateGame();
+    autoRemaining--;
     render();
-    autoTimer=setTimeout(step,target===1?900:100);
+    if(game.pendingDecision||autoRemaining<=0||game.games>=144){autoTimer=null;save();render();return}
+    autoTimer=setTimeout(step,target===1?650:120);
   };
-  autoTimer=setTimeout(step,400);
+  autoTimer=setTimeout(step,350);
 }
 function simulateGame(){
   if(game.games>=144)return;
@@ -645,7 +707,12 @@ function resolveDecision(i){
     addNews("💢 결정적 승부 실패",`${p?p.name:"선수"}의 선택이 아쉽게 실패했습니다.`,"bad");
   }
   save();render();
-  // 자동 진행은 사용자가 선택한 뒤 다시 시작할 수 있도록 안전하게 중지한다.
+  if(autoRemaining>0 && game.games<144){
+    autoTimer=setTimeout(()=>{
+      autoTimer=null;
+      if(!game.pendingDecision)startAuto(autoRemaining);
+    },450);
+  }
 }
 function finishSeason(){
   if(game.games<144)return alert("144경기를 모두 진행한 뒤 시즌을 종료할 수 있습니다.");
