@@ -9,6 +9,21 @@
 button,input{font:inherit}.app{display:flex;min-height:100vh}.side{position:fixed;inset:0 auto 0 0;width:235px;background:#0c1424;border-right:1px solid #293a58;padding:15px;overflow:auto}.logo{font-weight:900;font-size:19px;margin:10px}.logo b{color:#5c98ff}.nav{width:100%;border:0;background:transparent;color:#aebbd2;padding:10px;border-radius:8px;text-align:left;margin:2px 0;cursor:pointer}.nav:hover,.nav.active{background:#1a2945;color:white}.main{margin-left:235px;width:calc(100% - 235px)}header{height:70px;position:sticky;top:0;z-index:5;background:#0c1424f2;border-bottom:1px solid #293a58;display:flex;justify-content:space-between;align-items:center;padding:0 24px}.topstats{display:flex;gap:16px;color:#a8b8d3}.budget{color:#ffd05a;font-size:20px;font-weight:900}.content{padding:24px;max-width:1500px;margin:auto}.hero{min-height:250px;padding:30px;border:1px solid #30415f;border-radius:18px;background:radial-gradient(circle at 50% 15%,#294572,#111c30 68%);display:flex;align-items:end}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.panel,.card{background:#121c30;border:1px solid #2a3a59;border-radius:13px;padding:17px}.card{background:#182640}h1{margin:0 0 8px;font-size:30px}h2{margin:0 0 13px}.stat{font-size:28px;font-weight:900}.muted{color:#91a3c2}.gold{color:#ffd05a}.good{color:#42d49b}.bad{color:#ff7184}.btn{border:0;border-radius:8px;background:#4e8cff;color:#fff;padding:9px 13px;font-weight:700;cursor:pointer}.btn.gray{background:#2b3b59}.btn.green{background:#22986e}.btn.red{background:#b73f55}.btn.gold{background:#b9861d}.btn:disabled{opacity:.4;cursor:not-allowed}.actions,.form{display:flex;gap:8px;flex-wrap:wrap}input{background:#0d1728;border:1px solid #31425f;color:white;padding:10px;border-radius:8px}.tag{display:inline-block;padding:4px 8px;background:#263754;border-radius:99px;font-size:12px;margin:2px}.avatar{width:68px;height:68px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#304c78,#18263f);font-size:34px;border:2px solid #51698e;flex:none}.player{display:flex;gap:13px}.player>div:last-child{flex:1}.progress{height:8px;background:#293752;border-radius:99px;overflow:hidden}.progress div{height:100%;background:#5795ff}.news{padding:11px 0;border-bottom:1px solid #293853}.rank{display:grid;grid-template-columns:35px 1fr 60px 60px 60px;padding:9px;border-bottom:1px solid #293853}.rank.me{background:#1c3156;border-radius:7px}.table{overflow:auto}table{width:100%;border-collapse:collapse;min-width:760px}th,td{padding:9px;border-bottom:1px solid #293853;text-align:left;white-space:nowrap}.modal{position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;padding:18px;z-index:20}.modal>div{width:min(650px,100%);max-height:90vh;overflow:auto;background:#121c30;border:1px solid #344766;border-radius:15px;padding:20px}.hidden{display:none}.Common{color:#c5d0e2}.Rare{color:#5ca8ff}.Epic{color:#b875ff}.Legend{color:#ffc34d}.Mystic{color:#ff6ec7}.notice{padding:13px;border-radius:10px;background:#182640;border:1px solid #344766;margin:12px 0}
 @media(max-width:850px){.side{width:185px}.main{margin-left:185px;width:calc(100% - 185px)}.grid{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.app{display:block}.side{position:static;width:100%;height:auto}.main{margin:0;width:100%}header{position:static;height:auto;gap:10px;flex-wrap:wrap;padding:15px}.grid,.grid2{grid-template-columns:1fr}.topstats{gap:8px;flex-wrap:wrap}}
+ 
+.draw-stage{position:relative;overflow:hidden;min-height:260px;border-radius:16px;background:radial-gradient(circle at center,#243b62,#0a1220 72%);display:flex;align-items:center;justify-content:center}
+.draw-stage .orb{width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,#fff 0 5%,#8fbaff 8%,#3767c5 35%,#152c59 70%,transparent 71%);box-shadow:0 0 30px #5c98ff,0 0 90px #315db0;animation:orbPulse 1.2s infinite}
+.draw-stage .draw-text{position:absolute;text-align:center;font-size:22px;font-weight:900}
+.draw-stage.epic{background:radial-gradient(circle,#351a52,#100d1b 72%)}
+.draw-stage.legend{background:radial-gradient(circle,#513b13,#171209 72%)}
+.draw-stage.mystic{background:radial-gradient(circle,#5b164e,#180b19 72%)}
+.draw-stage.epic .orb{box-shadow:0 0 35px #b875ff,0 0 120px #7c3db5}
+.draw-stage.legend .orb{box-shadow:0 0 35px #ffc34d,0 0 120px #b47a18}
+.draw-stage.mystic .orb{box-shadow:0 0 40px #ff6ec7,0 0 140px #c52c9d}
+@keyframes orbPulse{0%,100%{transform:scale(.88);opacity:.75}50%{transform:scale(1.08);opacity:1}}
+.reveal-card{animation:reveal .55s ease both}
+@keyframes reveal{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.06);opacity:1}100%{transform:scale(1);opacity:1}}
+.training-card{min-height:330px}
+.training-buttons .btn{flex:1;min-width:110px}
 </style>
 </head>
 <body>
@@ -76,7 +91,7 @@ function load(){
 }
 function normalize(){
   if(!game||typeof game!=="object")return;
-  game.budget=Number.isFinite(+game.budget)?+game.budget:80;
+  game.budget=Number.isFinite(+game.budget)?+game.budget:120;
   game.year=Number(game.year)||2026; game.morale=clamp(Number(game.morale)||70,0,100);
   game.games=clamp(Number(game.games)||0,0,144); game.total=144;
   for(const k of ["roster","prospects","draft","fa","news","tx","awards","history","draws"])if(!Array.isArray(game[k]))game[k]=[];
@@ -121,7 +136,7 @@ function rollGrade(){
 function newGame(club,year){
   if(autoTimer){clearTimeout(autoTimer);autoTimer=null}
   game={
-    club,year:Number(year)||2026,budget:80,morale:70,games:0,total:144,phase:"시즌 시작 전",
+    club,year:Number(year)||2026,budget:120,morale:70,games:0,total:144,phase:"시즌 시작 전",
     league:makeLeague(),roster:Array.from({length:12},()=>createPlayer()),
     prospects:Array.from({length:15},()=>createPlayer({age:rand(18,22),ovr:rand(47,67),salary:1})),
     draft:Array.from({length:30},()=>createPlayer({age:rand(18,22),ovr:rand(47,67),salary:1})),
@@ -160,7 +175,7 @@ function playerCard(p,buttons=true){
   return `<div class="panel"><div class="player">${avatar(p)}<div><h3>${esc(p.name)}</h3>
   <span class="tag">${p.pos}</span><span class="tag">OVR ${p.ovr}</span><span class="tag ${p.grade}">${p.grade}</span>
   <p class="muted">${p.age}세 · 연봉 ${p.salary}억 · 계약 ${p.left}년${p.foreign?" · 외국인":""}</p></div></div>
-  <p>📊 ${stats(p)}</p><p>XP ${p.xp}/${p.need}</p><div class="progress"><div style="width:${cl(p.xp/p.need*100,0,100)}%"></div></div>
+  <p>📊 ${stats(p)}</p><p>XP ${p.xp}/${p.need}</p><div class="progress"><div style="width:${clamp(p.xp/p.need*100,0,100)}%"></div></div>
   ${buttons?`<div class="actions" style="margin-top:9px"><button class="btn gray" onclick="detailPlayer('${p.id}')">상세</button><button class="btn" onclick="renamePlayer('${p.id}')">이름 변경</button><button class="btn red" onclick="releasePlayer('${p.id}')">방출</button></div>`:""}</div>`;
 }
 
@@ -184,7 +199,7 @@ function startScreen(){
   <div class="panel" style="max-width:650px;margin-top:18px"><h2>새 구단 만들기</h2><div class="form">
   <input id="clubIn" maxlength="20" placeholder="구단명"><input id="yearIn" type="number" value="2026" min="1900" max="2100">
   <button class="btn" onclick="createClub()">구단 만들기</button></div>
-  <p class="muted">시작 예산 80억 · 시즌 10위로 종료해도 예산은 50억 미만으로 내려가지 않습니다.</p>
+  <p class="muted">시작 예산 120억 · 시즌 10위로 종료해도 예산은 50억 미만으로 내려가지 않습니다.</p>
   <p class="muted">단, 뽑기·영입 등으로 직접 돈을 쓰는 경우에는 50억 아래로 내려갈 수 있습니다.</p></div></div></div>`;
 }
 function createClub(){
@@ -225,7 +240,7 @@ function upgradeStadium(){
   save();render();
 }
 function rosterPage(c){
-  c.innerHTML=`<h1>👥 선수단</h1><p class="muted">선수 이름은 기본 랜덤 이름으로 생성되며 원할 때 직접 변경할 수 있습니다.</p><div class="grid">${game.roster.map(p=>playerCard(p)).join("")}</div>`;
+  c.innerHTML=`<h1>👥 선수단</h1><p class="muted">선수 이름은 기본 랜덤 이름으로 생성되며, 이름 변경은 선수단 화면에서만 가능합니다.</p><div class="grid">${game.roster.map(p=>playerCard(p)).join("")}</div>`;
 }
 function detailPlayer(id){
   const p=game.roster.find(x=>x.id===id);if(!p)return;
@@ -233,7 +248,7 @@ function detailPlayer(id){
   <div class="grid2" style="margin-top:12px"><div class="card"><b>타격</b><p>타율 ${p.ab?(p.h/p.ab).toFixed(3):".000"} · HR ${p.hr} · RBI ${p.rbi}</p></div>
   <div class="card"><b>수비</b><p>수비 능력 ${p.def}</p></div><div class="card"><b>계약</b><p>연봉 ${p.salary}억 · 잔여 ${p.left}년</p></div>
   <div class="card"><b>육성</b><p>경험치 획득 배율 ×${(GRADE_INFO[p.grade].xp*xpMultiplier()).toFixed(2)}</p></div></div>
-  <div class="actions" style="margin-top:12px"><button class="btn" onclick="renamePlayer('${p.id}');closeModal()">이름 변경</button><button class="btn gray" onclick="closeModal()">닫기</button></div>`;
+  <div class="actions" style="margin-top:12px"><button class="btn gray" onclick="closeModal()">닫기</button></div>`;
   $("modal").classList.remove("hidden");
 }
 function closeModal(){$("modal").classList.add("hidden");$("modalBox").innerHTML=""}
@@ -241,7 +256,7 @@ function renamePlayer(id){
   const p=game.roster.find(x=>x.id===id);if(!p)return;
   const n=prompt("새 선수 이름을 입력하세요.",p.name);
   if(n===null)return;if(!n.trim())return alert("이름을 입력해주세요.");
-  p.name=n.trim();addNews("✏️ 선수 이름 변경",`${p.name}의 이름이 변경되었습니다.`);save();render();
+  addNews("✏️ 선수 이름 변경",`${p.name}의 이름이 변경되었습니다.`);save();render();
 }
 function releasePlayer(id){
   const i=game.roster.findIndex(x=>x.id===id);if(i<0)return;const p=game.roster[i];
@@ -253,41 +268,70 @@ function lineupPage(c){
   c.innerHTML=`<h1>📋 라인업</h1><p class="muted">현재 OVR 기준 추천 라인업입니다.</p><div class="grid">${list.slice(0,9).map((p,i)=>`<div class="panel"><b>${i+1}번</b>${playerCard(p,false)}</div>`).join("")}</div>`;
 }
 function developPage(c){
-  c.innerHTML=`<h1>📈 선수 육성</h1><p class="muted">등급과 구장, 우승 프리미엄이 훈련 경험치에 영향을 줍니다.</p><div class="grid">${game.roster.map(p=>`<div class="panel">${playerCard(p,false)}
-  <p>등급 XP 배율 ×${GRADE_INFO[p.grade].xp} · 구장 Lv.${game.stadiumLevel} · 우승 +${game.championPremium}%</p>
-  <button class="btn green" onclick="trainPlayer('${p.id}')">훈련 +${Math.round(20*GRADE_INFO[p.grade].xp*xpMultiplier())} XP</button></div>`).join("")}</div>`;
+  const mult=xpMultiplier();
+  c.innerHTML=`<h1>📈 선수 육성</h1>
+  <p class="muted">배팅, 투구, 헬스, 메디컬 훈련을 선택해 선수의 경험치를 올립니다.</p>
+  <div class="notice">오늘 남은 훈련 횟수: <b class="gold">${game.train}회</b> · 전체 육성 배율 ×${mult.toFixed(2)}</div>
+  <div class="grid">${game.roster.map(p=>`<div class="panel training-card">${playerCard(p,false)}
+    <div class="training-buttons actions" style="margin-top:12px">
+      <button class="btn green" onclick="trainPlayer('${p.id}','batting')">🏏 배팅<br>+${Math.round(18*GRADE_INFO[p.grade].xp*mult)} XP</button>
+      <button class="btn" onclick="trainPlayer('${p.id}','pitching')">⚾ 투구<br>+${Math.round(18*GRADE_INFO[p.grade].xp*mult)} XP</button>
+    </div>
+    <div class="training-buttons actions" style="margin-top:8px">
+      <button class="btn gray" onclick="trainPlayer('${p.id}','fitness')">💪 헬스<br>+${Math.round(15*GRADE_INFO[p.grade].xp*mult)} XP</button>
+      <button class="btn gold" onclick="trainPlayer('${p.id}','medical')">🩺 메디컬<br>+${Math.round(12*GRADE_INFO[p.grade].xp*mult)} XP</button>
+    </div>
+  </div>`).join("")}</div>`;
 }
-function trainPlayer(id){
-  const p=game.roster.find(x=>x.id===id);if(!p)return;
+function trainPlayer(id,type){
+  const p=game.roster.find(x=>x.id===id); if(!p)return;
   if(game.train<=0)return alert("오늘 사용할 수 있는 훈련 횟수가 없습니다.");
-  game.train--;gainXP(p,20);addNews("📈 선수 훈련",`${p.name}이 훈련을 통해 경험치를 얻었습니다.`,"good");save();render();
-}
-function gainXP(p,base){
-  p.xp+=Math.round(base*GRADE_INFO[p.grade].xp*xpMultiplier());
-  while(p.xp>=p.need){p.xp-=p.need;p.ovr=clamp(p.ovr+1,45,99);p.need=Math.round(p.need*1.12)}
+  const data={batting:["🏏 배팅 훈련",18],pitching:["⚾ 투구 훈련",18],fitness:["💪 헬스",15],medical:["🩺 메디컬 훈련",12]}[type];
+  if(!data)return;
+  game.train--;
+  const xp=Math.max(1,Math.round(data[1]*GRADE_INFO[p.grade].xp*xpMultiplier()));
+  gainXP(p,xp);
+  if(type==="fitness")p.fatigue=clamp(p.fatigue-8,0,100);
+  if(type==="medical")p.fatigue=clamp(p.fatigue-15,0,100);
+  addNews(data[0],`${p.name}이(가) ${data[0].slice(2)}으로 ${xp} XP를 획득했습니다.`,"good");
+  save();render();
 }
 function drawPage(c){
-  c.innerHTML=`<h1>🎰 선수 뽑기</h1><p class="muted">등급 확률: Common 70% · Rare 20% · Epic 7% · Legend 2.5% · Mystic 0.5%</p>
-  <div class="grid2"><div class="panel"><h2>1회 뽑기</h2><div class="stat gold">2억</div><button class="btn" onclick="drawPlayers(1)">1회 뽑기</button></div>
-  <div class="panel"><h2>10회 뽑기</h2><div class="stat gold">18억</div><p class="muted">10번째 선수는 Rare 이상 확정</p><button class="btn gold" onclick="drawPlayers(10)">10회 뽑기</button></div></div>
-  <div class="panel" style="margin-top:15px"><h2>최근 뽑기 결과</h2>${game.draws.slice(0,10).map(d=>`<div class="news"><b>${d.grade} · OVR ${d.ovr}</b> · ${esc(d.name)}</div>`).join("")||"<p class='muted'>아직 결과가 없습니다.</p>"}</div>`;
+ c.innerHTML=`<h1>🎰 선수 뽑기</h1><div class="grid2">
+ <div class="panel"><h2>1회 뽑기</h2><div class="stat gold">2억</div><button class="btn" onclick="drawPlayers(1)">1회 뽑기</button></div>
+ <div class="panel"><h2>10회 뽑기</h2><div class="stat gold">18억</div><p class="muted">10번째는 Rare 이상 확정</p><button class="btn gold" onclick="drawPlayers(10)">10회 뽑기</button></div></div>
+ <div class="panel" style="margin-top:15px"><h2>최근 결과</h2>${game.draws.slice(0,10).map(d=>`<div class="news"><b class="${d.grade}">${esc(d.grade)} · OVR ${d.ovr}</b> · ${esc(d.name)}</div>`).join("")||"<p class='muted'>아직 결과가 없습니다.</p>"}</div>`;
 }
 function drawPlayers(n){
-  const cost=n===10?18:2;
-  if(game.budget<cost){alert(`예산이 부족합니다. 현재 ${money(game.budget)}억입니다.`);return}
-  game.budget-=cost;
-  const results=[];
-  for(let i=0;i<n;i++){
-    let p=createPlayer();
-    if(n===10&&i===9){do{p=createPlayer()}while(p.grade==="Common")}
-    const name=prompt(`${i+1}번째 선수 기본 이름은 "${p.name}"입니다. 이름을 바꾸려면 입력하세요. 취소하면 기본 이름을 사용합니다.`,p.name);
-    if(name!==null&&name.trim())p.name=name.trim();
-    game.roster.push(p);game.draws.unshift({year:game.year,game:p.name, name:p.name,grade:p.grade,ovr:p.ovr});addTx("선수 뽑기",p,`${n}회 뽑기`);
-    results.push(p);
-  }
-  addNews("🎰 선수 뽑기",`${n}회 뽑기로 ${results.length}명의 선수를 영입했습니다.`,"good");save();
-  $("modalBox").innerHTML=`<h2>🎉 뽑기 결과</h2><div class="grid">${results.map(p=>playerCard(p,false)).join("")}</div><button class="btn" onclick="closeModal();go('draw')">확인</button>`;
-  $("modal").classList.remove("hidden");
+ const cost=n===10?18:2;
+ if(game.budget<cost)return alert(`뽑기에 ${cost}억이 필요합니다.`);
+ game.budget=money(game.budget-cost);
+ const results=[];
+ for(let i=0;i<n;i++){
+   let p=createPlayer();
+   if(n===10&&i===9&&p.grade==="Common")p=createPlayer({grade:pick(["Rare","Epic","Legend","Mystic"])});
+   game.roster.push(p); game.draws.unshift({id:uid(),year:game.year,name:p.name,grade:p.grade,ovr:p.ovr});
+   addTx("선수 뽑기",p,`${n}회 뽑기`); results.push(p);
+ }
+ save(); showDrawReveal(results,n);
+}
+function showDrawReveal(results,n){
+ const best=results.reduce((a,b)=>GRADES.indexOf(a.grade)>GRADES.indexOf(b.grade)?a:b);
+ const cls=best.grade.toLowerCase();
+ $("modalBox").innerHTML=`<div class="draw-stage ${cls}" id="drawStage"><div class="orb"></div><div class="draw-text" id="drawText">✨ 선수 스카우팅 중...</div></div>
+ <div id="drawResult" style="display:none;margin-top:14px"><h2 class="${best.grade}">🎉 ${esc(best.grade)} 등장!</h2>
+ <div class="grid">${results.map((p,i)=>`<div class="panel reveal-card" style="animation-delay:${i*45}ms">${playerCard(p,false)}</div>`).join("")}</div>
+ <button class="btn" onclick="closeModal();go('draw')">확인</button></div>`;
+ $("modal").classList.remove("hidden");
+ const text=$("drawText"),stage=$("drawStage"),result=$("drawResult");
+ setTimeout(()=>{if(text)text.textContent="선수 데이터 분석 중..."},450);
+ setTimeout(()=>{if(text)text.textContent="등급 판정 중..."},850);
+ setTimeout(()=>{
+   if(!text||!stage||!result)return;
+   text.textContent=`${best.grade} 등급 발견!`;
+   stage.className=`draw-stage ${cls}`;
+   setTimeout(()=>{result.style.display="block";stage.style.minHeight="180px"},600);
+ },1500+Math.min(1200,n*70));
 }
 function scoutPage(c){
   game.scoutPool=Array.from({length:10},()=>createPlayer({ovr:rand(52,78)}));
@@ -299,9 +343,9 @@ function signScouted(id){
   signPlayer(p);
 }
 function signPlayer(p){
-  p=normalizePlayer(p);const n=confirm(`기본 이름은 "${p.name}"입니다.\n이름을 바꾸시겠습니까?`)?prompt("새 이름",p.name):p.name;
+  p=normalizePlayer(p);
   if(!n||!n.trim())return;if(game.budget-p.salary<0)return alert("예산이 부족합니다.");
-  p.name=n.trim();game.budget-=p.salary;game.roster.push(p);addTx("국내 영입",p,"스카우팅");addNews("🔎 국내 영입",`${p.name}을(를) 영입했습니다.`,"good");save();go("scout");
+  game.budget-=p.salary;game.roster.push(p);addTx("국내 영입",p,"스카우팅");addNews("🔎 국내 영입",`${p.name}을(를) 영입했습니다.`,"good");save();go("scout");
 }
 function overseasPage(c){
   const count=game.roster.filter(p=>p.foreign).length;
@@ -316,17 +360,15 @@ function signForeignScouted(id){
 function signForeign(p){
   if(game.roster.filter(x=>x.foreign).length>=3)return alert("외국인 선수는 최대 3명입니다.");
   p=normalizePlayer(p);p.foreign=true;
-  const n=confirm(`기본 이름은 "${p.name}"입니다.\n이름을 바꾸시겠습니까?`)?prompt("새 이름",p.name):p.name;
   if(!n||!n.trim())return;if(game.budget-p.salary<0)return alert("예산이 부족합니다.");
-  p.name=n.trim();game.budget-=p.salary;game.roster.push(p);addTx("해외 영입",p,"외국인 선수");addNews("🌎 해외 영입",`${p.name}과 계약했습니다.`,"good");save();go("overseas");
+  game.budget-=p.salary;game.roster.push(p);addTx("해외 영입",p,"외국인 선수");addNews("🌎 해외 영입",`${p.name}과 계약했습니다.`,"good");save();go("overseas");
 }
 function draftPage(c){
   c.innerHTML=`<h1>📋 신인 드래프트</h1><p class="muted">선수 이름은 기본 이름을 사용하거나 지명 시 직접 변경할 수 있습니다.</p><div class="grid">${game.draft.slice(0,18).map(p=>`<div class="panel">${playerCard(p,false)}<button class="btn green" onclick="draftPlayer('${p.id}')">지명</button></div>`).join("")}</div>`;
 }
 function draftPlayer(id){
   const i=game.draft.findIndex(p=>p.id===id);if(i<0)return;const p=game.draft[i];
-  const n=confirm(`기본 이름은 "${p.name}"입니다.\n이름을 바꾸시겠습니까?`)?prompt("새 이름",p.name):p.name;
-  if(!n||!n.trim())return;p.name=n.trim();game.roster.push(p);game.draft.splice(i,1);addTx("신인 드래프트",p,"지명");addNews("📋 신인 지명",`${p.name}을(를) 지명했습니다.`,"good");save();go("draft");
+  if(!n||!n.trim())return;game.roster.push(p);game.draft.splice(i,1);addTx("신인 드래프트",p,"지명");addNews("📋 신인 지명",`${p.name}을(를) 지명했습니다.`,"good");save();go("draft");
 }
 function faPage(c){
   c.innerHTML=`<h1>💵 FA 시장</h1><div class="grid">${game.fa.map(p=>`<div class="panel">${playerCard(p,false)}<p>${p.salary}억 × ${p.years}년</p><button class="btn" onclick="faPlayer('${p.id}')">FA 영입</button></div>`).join("")}</div>`;
@@ -334,15 +376,13 @@ function faPage(c){
 function faPlayer(id){
   const i=game.fa.findIndex(p=>p.id===id);if(i<0)return;const p=game.fa[i],cost=p.salary*p.years*.8;
   if(game.budget-cost<0)return alert(`계약에 ${money(cost)}억이 필요합니다.`);
-  const n=confirm(`기본 이름은 "${p.name}"입니다.\n이름을 바꾸시겠습니까?`)?prompt("새 이름",p.name):p.name;
-  if(!n||!n.trim())return;p.name=n.trim();game.budget-=cost;game.roster.push(p);game.fa.splice(i,1);addTx("FA 영입",p,`${p.years}년 계약, 할인 적용`);addNews("💵 FA 영입",`${p.name}과 계약했습니다.`,"good");save();go("fa");
+  if(!n||!n.trim())return;game.budget-=cost;game.roster.push(p);game.fa.splice(i,1);addTx("FA 영입",p,`${p.years}년 계약, 할인 적용`);addNews("💵 FA 영입",`${p.name}과 계약했습니다.`,"good");save();go("fa");
 }
 function tradePage(c){
   c.innerHTML=`<h1>🤝 트레이드</h1><p class="muted">선수를 선택하면 비슷한 전력의 교환 선수가 생성됩니다.</p><div class="grid">${game.roster.slice(0,18).map(p=>`<div class="panel">${playerCard(p,false)}<button class="btn" onclick="tradePlayer('${p.id}')">트레이드</button></div>`).join("")}</div>`;
 }
 function tradePlayer(id){
   const p=game.roster.find(x=>x.id===id);if(!p)return;const q=createPlayer({ovr:clamp(p.ovr+rand(-4,4),50,90)});
-  const n=prompt(`받을 선수의 이름을 입력하세요. 기본 이름: ${q.name}`,q.name);if(n===null)return;if(!n.trim())return;q.name=n.trim();
   if(!confirm(`${p.name} OVR${p.ovr} ↔ ${q.name} OVR${q.ovr}\n진행할까요?`))return;
   game.roster=game.roster.filter(x=>x.id!==p.id);game.roster.push(q);addTx("트레이드 OUT",p,`${q.name}과 교환`);addTx("트레이드 IN",q,`${p.name}과 교환`);
   addNews("🤝 트레이드 성사",`${p.name}을(를) 내주고 ${q.name}을(를) 영입했습니다.`);save();go("trade");
