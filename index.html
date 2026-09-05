@@ -125,7 +125,7 @@ function normalize(){
   game.games=clamp(Number(game.games)||0,0,144); game.total=144;
   for(const k of ["roster","prospects","draft","fa","news","tx","awards","history","draws"])if(!Array.isArray(game[k]))game[k]=[];
   game.league=Array.isArray(game.league)&&game.league.length?game.league:makeLeague();
-  game.train=Number(game.train)||8; game.last=game.last||null;
+  game.train=Number.isFinite(+game.train)?+game.train:8; game.last=game.last||null;
   game.stadiumLevel=clamp(Number(game.stadiumLevel)||0,0,5);
   game.stadiumUpgradeCost=100; game.championPremium=Number(game.championPremium)||0;
   game.pendingDecision=null;
@@ -184,6 +184,22 @@ function newGame(club,year){
   game.roster.slice(0,3).forEach(p=>p.grade="Legend");
   addNews("🏟️ 구단 창단",`${club}의 ${game.year}년 시즌을 시작합니다. 시작 예산은 120억입니다.`,"good");
   save();
+}
+function gainXP(p,amount=0){
+  if(!p)return;
+  if(!Number.isFinite(+p.xp))p.xp=0;
+  if(!Number.isFinite(+p.need)||p.need<=0)p.need=100;
+  let xp=Math.max(0,Number(amount)||0);
+  p.xp+=xp;
+  let leveled=0;
+  while(p.xp>=p.need){
+    p.xp-=p.need;
+    p.need=Math.round(p.need*1.12);
+    p.ovr=clamp(p.ovr+1,45,99);
+    p.def=clamp(p.def+(Math.random()<.5?1:2),40,99);
+    leveled++;
+  }
+  return leveled;
 }
 function addNews(title,body,type="neutral"){
   game.news.unshift({year:game.year,game:game.games,title,body,type});
@@ -491,6 +507,7 @@ function developPage(c){
 }
 function trainPlayer(id,type){
   const p=game.roster.find(x=>x.id===id); if(!p)return;
+  game.train=Number(game.train)||0;
   if(game.train<=0)return alert("오늘 사용할 수 있는 훈련 횟수가 없습니다.");
   const data={batting:["🏏 배팅 훈련",18],pitching:["⚾ 투구 훈련",18],fitness:["💪 헬스",15],medical:["🩺 메디컬 훈련",12]}[type];
   if(!data)return;
@@ -628,45 +645,76 @@ function seasonPage(c){
   <div class="panel"><h2>⭐ 주전 기록</h2>${[...game.roster].sort((a,b)=>b.ovr-a.ovr).slice(0,9).map(p=>`<div class="news"><b>${esc(p.name)}</b> <span class="tag">${p.pos}</span><span class="tag ${p.grade}">${p.grade}</span><div class="muted">${stats(p)}</div></div>`).join("")}</div></div>`;
 }
 let autoRemaining=0;
+let autoTarget=0;
 
 function startAuto(target){
   if(autoTimer){clearTimeout(autoTimer);autoTimer=null}
   if(!game||game.games>=144)return;
-  autoRemaining=Math.min(Math.max(1,Number(target)||1),144-game.games);
-  game.phase="시즌 진행 중";save();render();
-  const step=()=>{
-    if(!game||game.games>=144||autoRemaining<=0){autoTimer=null;autoRemaining=0;save();render();return}
-    if(game.pendingDecision){autoTimer=null;return}
-    simulateGame();
-    autoRemaining--;
-    render();
-    if(game.pendingDecision||autoRemaining<=0||game.games>=144){autoTimer=null;save();render();return}
-    autoTimer=setTimeout(step,target===1?650:120);
-  };
-  autoTimer=setTimeout(step,350);
+  const requested=Math.max(1,Number(target)||1);
+  autoRemaining=Math.min(requested,144-game.games);
+  autoTarget=autoRemaining;
+  game.phase="시즌 진행 중";
+  save();render();
+  runAutoStep();
+}
+
+function runAutoStep(){
+  if(!game||game.games>=144||autoRemaining<=0){
+    autoTimer=null;autoRemaining=0;autoTarget=0;save();render();return;
+  }
+  if(game.pendingDecision){autoTimer=null;return;}
+  const did=simulateGame();
+  if(!did){autoTimer=null;autoRemaining=0;save();render();return;}
+  autoRemaining--;
+  render();
+  if(game.pendingDecision||autoRemaining<=0||game.games>=144){
+    autoTimer=null;
+    if(!game.pendingDecision)save();
+    return;
+  }
+  // Short delay for multi-game simulation, longer for single-game mode so the result is readable.
+  const delay=autoTarget===1?650:140;
+  autoTimer=setTimeout(runAutoStep,delay);
 }
 function simulateGame(){
-  if(game.games>=144)return;
+  if(!game||game.games>=144)return false;
   game.games++;
   game.phase="시즌 진행 중";
-  const t=game.league.find(x=>x.name===game.club);
+  if(!Array.isArray(game.league)||!game.league.length)game.league=makeLeague();
+  let t=game.league.find(x=>x.name===game.club);
+  if(!t){
+    t={name:game.club,w:0,l:0,run:0};
+    game.league.push(t);
+  }
+
+  // Every team plays one game, so the standings actually move during the season.
+  game.league.forEach(team=>{
+    if(team.name===game.club)return;
+    const strength=rand(55,82), win=Math.random()<.5;
+    if(win){team.w++;team.run+=rand(2,8)}else{team.l++;team.run+=rand(0,5)}
+  });
+
   const chance=clamp(.5+(rosterPower()-rand(56,86))/100,.25,.75);
   const win=Math.random()<chance;
   if(win){t.w++;t.run+=rand(2,9)}else{t.l++;t.run+=rand(0,5)}
+
   game.roster.forEach(p=>{
     p.games++;p.fatigue=clamp(p.fatigue+rand(1,4),0,100);
     gainXP(p,8);
     if(["SP","RP"].includes(p.pos)){
-      if(Math.random()<.25)win?p.w++:p.l++;
+      if(Math.random()<.25){if(win)p.w++;else p.l++}
       p.era=clamp(p.era+(Math.random()-.5)*.10,1.5,7.5);
     }else{
-      p.ab+=rand(2,5);if(Math.random()<.25)p.h++;
+      p.ab+=rand(2,5);
+      if(Math.random()<.25)p.h++;
       if(Math.random()<.035){p.hr++;p.rbi+=rand(1,3)}
     }
   });
+
   if(game.games%10===0){
     const e=pick([["🔥 선수단 분위기 상승",4],["😤 팬들의 불만",-5],["🌟 유망주 발견",2],["💥 타선 폭발",3],["📉 불펜 난조",-3]]);
-    game.morale=clamp(game.morale+e[1],0,100);addNews(e[0],e[0].replace(/[🔥😤🌟💥📉]/g,""),e[1]>0?"good":"bad");
+    game.morale=clamp(game.morale+e[1],0,100);
+    addNews(e[0],e[0].replace(/[🔥😤🌟💥📉]/g,""),e[1]>0?"good":"bad");
   }
   if(game.games%20===0){
     const stars=[...game.roster].sort((a,b)=>b.ovr-a.ovr).slice(0,5);
@@ -674,8 +722,12 @@ function simulateGame(){
     addNews("📊 20경기 리포트",`${game.games}경기 현재 ${myRank()}위입니다.`);
   }
   if(Math.random()<.075&&!game.pendingDecision)createDecision();
-  if(game.games>=144){game.phase="정규시즌 종료";addNews("🏁 정규시즌 종료","144경기를 모두 마쳤습니다. 시즌 종료 버튼을 눌러 시상식을 확인하세요.","good")}
+  if(game.games>=144){
+    game.phase="정규시즌 종료";
+    addNews("🏁 정규시즌 종료","144경기를 모두 마쳤습니다. 시즌 종료 버튼을 눌러 시상식을 확인하세요.","good");
+  }
   save();
+  return true;
 }
 function createDecision(){
   const candidates=game.roster.length?game.roster:[];
@@ -710,7 +762,7 @@ function resolveDecision(i){
   if(autoRemaining>0 && game.games<144){
     autoTimer=setTimeout(()=>{
       autoTimer=null;
-      if(!game.pendingDecision)startAuto(autoRemaining);
+      if(!game.pendingDecision)runAutoStep();
     },450);
   }
 }
